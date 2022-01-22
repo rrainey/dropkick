@@ -10,7 +10,7 @@ carried by a skydiver during their jump.  In includes a GPS, IMU, and altitude s
 
 # Directories
 * **pcb** - KiCad 6 PCB project
-* **enlosure** - Fusion 360 enclosure; designed to be 3D-printed
+* **enclosure** - Fusion 360 enclosure; designed to be 3D-printed
 * **firmware** - Arduino-based firmware for the microcontroller
 * **images** - supporting images and videos
 
