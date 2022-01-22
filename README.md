@@ -1,14 +1,17 @@
 
 # Dropkick
-An experimental logger for skydivers
+**An experimental logger for skydivers**
 
-This is a stand-alone battery-powered data logger designed to be
+This is a stand-alone, battery-powered data logger designed to be
 carried by a skydiver during their jump.  In includes a GPS, IMU, and altitude sensors. Data from all sensors is logged onto a Micro-SD card. The logged data can be reviewed post-jump by to-be-designed software.
 
 ![](images/dropkick-03.png)
 
+## The Global Chip Shortage
+**January 2022** - The global semiconductor shortage is very real and impacting my progress on this project. GPS and IMU chips, in particular, are hard to find. For my own use, I'm currently planning to cannibalize these chips from existing boards to get an operational prototype.  If you are trying to repproduce my work, though, you are on your own.
 
-# Directories
+
+## Directory Structure
 * **pcb** - KiCad 6 PCB project
 * **enclosure** - Fusion 360 enclosure; designed to be 3D-printed
 * **firmware** - Arduino-based firmware for the microcontroller
@@ -23,6 +26,8 @@ Dimensions: 58mm x 51mm x 20mm
 Power: 500mAh Li-Polymer battery
 
 Storage: removable microSD card
+
+Log file format: one log file for each jump; raw log format is an extension of NMEA0183. Details to follow.
 
 USB micro-B connector (recharging and programming)
 
