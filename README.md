@@ -3,7 +3,7 @@
 **An experimental logger for skydivers**
 
 This is a stand-alone, battery-powered data logger designed to be
-carried by a skydiver during their jump.  In includes a GPS, IMU, and altitude sensors. Data from all sensors is logged onto a Micro-SD card. The logged data can be reviewed post-jump by to-be-designed software.
+carried by a skydiver during their jump.  It includes a GPS, IMU, and altitude sensors. Data from all sensors is logged onto a Micro-SD card. The logged data can be reviewed post-jump by to-be-designed software.
 
 ![](images/dropkick-03.png)
 
