@@ -12,7 +12,7 @@ carried by a skydiver during their jump.  It includes a GPS, IMU, and altitude s
 
 
 ## Directory Structure
-* **pcb** - KiCad 6 PCB project
+* **pcb** - KiCad 6 PCB project including Gerber production files
 * **enclosure** - Fusion 360 enclosure; designed to be 3D-printed
 * **firmware** - Arduino-based firmware for the microcontroller
 * **images** - supporting images and videos
@@ -23,17 +23,21 @@ carried by a skydiver during their jump.  It includes a GPS, IMU, and altitude s
 
 Dimensions: 58mm x 51mm x 20mm
 
-Power: 500mAh Li-Polymer battery
+Power: rechargeable 500mAh Li-Polymer battery
 
 Storage: removable microSD card
 
 Log file format: one log file for each jump; raw log format is an extension of NMEA0183. Details to follow.
 
-USB micro-B connector (recharging and programming)
+USB micro-B connector (for recharging and programming)
 
 
 ## Credits
-This PCB design is based on several Adafruit Feather and Stemma QT boards.  Please support Adafruit where you can.
+This PCB design is based on several Adafruit Feather and Stemma QT sensor boards.  Adafruit maintains a family of excellent
+microcontroller and sensor evalation boards and companion software.  Support them. They deserve it.
+
+The enclosure for this project was designed using the personal edition of Fusion 360. Autodesk supports the Maker community
+through access to this epic design tool.  Try it out.
 
 
 ## Disclaimer
