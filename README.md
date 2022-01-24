@@ -31,6 +31,8 @@ Log file format: one log file for each jump; raw log format is an extension of N
 
 USB micro-B connector (for recharging and programming)
 
+Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino programming via the USB connector.
+
 
 ## Credits
 This PCB design is based on several Adafruit Feather and Stemma QT sensor boards.  Adafruit maintains a family of excellent
