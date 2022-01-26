@@ -1,6 +1,6 @@
 (footprint "CAM-M8C-0" (version 20211014) (generator pcbnew)
   (layer "F.Cu")
-  (tedit 61F0742E)
+  (tedit 61F0C03C)
   (attr through_hole)
   (fp_text reference "REF**" (at 0 0) (layer "F.SilkS")
     (effects (font (size 1 1) (thickness 0.15)))
@@ -107,10 +107,10 @@
   (pad "29" smd rect (at 0 6.600002 90) (size 1.143 0.7112) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp a501555e-bbc7-4b58-ad89-28a0cd3dd6d0))
   (pad "30" smd rect (at 1.000001 6.600002 90) (size 1.143 0.7112) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp 3cfcbcc7-4f45-46ab-82a8-c414c7972161))
   (pad "31" smd rect (at 2.000001 6.600002 90) (size 1.143 0.7112) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp 2f3deced-880d-4075-a81b-95c62da5b94d))
-  (zone (net 0) (net_name "") (layers *.Cu) (tstamp 44035e53-ff94-45ad-801f-55a1ce042a0d) (hatch edge 0.508)
+  (zone (net 0) (net_name "") (layers *.Cu) (tstamp b3d08afa-f296-4e3b-8825-73b6331d35bf) (hatch edge 0.508)
     (connect_pads (clearance 0))
     (min_thickness 0.254)
-    (keepout (tracks not_allowed) (vias not_allowed) (pads not_allowed ) (copperpour allowed) (footprints allowed))
+    (keepout (tracks not_allowed) (vias not_allowed) (pads not_allowed ) (copperpour not_allowed) (footprints not_allowed))
     (fill (thermal_gap 0.508) (thermal_bridge_width 0.508))
     (polygon
       (pts
