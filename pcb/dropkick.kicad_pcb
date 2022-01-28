@@ -1460,7 +1460,7 @@
     (property "Sheetfile" "dropkick.kicad_sch")
     (property "Sheetname" "")
     (path "/98dbeacd-eda1-4446-87dd-ddc62165f2c4")
-    (attr through_hole)
+    (attr smd)
     (fp_text reference "U2" (at 6.6 6.2) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 7c399e77-6ac9-401c-bc55-83c542b43225)
@@ -1572,6 +1572,11 @@
           (xy 83.117 94.866)
         )
       )
+    )
+    (model "${KIPRJMOD}/models/CAM.STEP"
+      (offset (xyz 3.6 1.05 0.5))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
     )
   )
 
