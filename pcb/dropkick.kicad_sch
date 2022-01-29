@@ -4227,6 +4227,10 @@
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid cff43199-a9e4-4850-8de9-c4a15b67bd94)
   )
+  (text "Sub B0540W-7-F" (at 15.24 44.45 90)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid e7566e6b-7871-4148-af7d-8106927a8b77)
+  )
 
   (label "D3" (at 121.92 119.38 0)
     (effects (font (size 1.2446 1.2446)) (justify left bottom))
