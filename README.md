@@ -33,6 +33,14 @@ USB micro-B connector (for recharging and programming)
 
 Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino programming via the USB connector.
 
+## Enclosure Notes
+The enclosure is designed to be 3D printed. Tolerances between the upper enclosure, lower enclosure, and the PCB
+are quite tight - printing precision will be important. Since 3D printing technologies will vary in their precision, 
+you may need to scale or otherwise modify the objects to adequately match the final measurements in the original design.
+
+For example, I printed the prototype enclosure on a MakerBot Replicator 2 (PLA) printer.  Using the default print settings
+I know that an object will shrink typically by about 1% post-printing.  I set the scale to 101% to compensate for that 
+in the MakerBot Desktop tooling and the end result works well.
 
 ## Credits
 This PCB design is based on several Adafruit Feather and Stemma QT sensor boards.  Adafruit maintains a family of excellent
