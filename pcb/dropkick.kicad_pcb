@@ -160,7 +160,7 @@
   (net 84 "unconnected-(U2-Pad29)")
   (net 85 "unconnected-(U2-Pad30)")
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 0118c5d6-1251-4282-a140-58378f9b3d8e)
     (at 71.453 56.85 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -204,7 +204,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 0a32f905-3f97-4852-af67-7addb4d70265))
   )
 
-  (footprint "lib_fr:CHIPLED_0805_NOOUTLINE" (layer "F.Cu")
+  (footprint "lib_fp:CHIPLED_0805_NOOUTLINE" (layer "F.Cu")
     (tedit 0) (tstamp 07c67c33-7071-4d68-b23f-0395f697f845)
     (at 83.82 47.21 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -314,7 +314,7 @@
       (net 13 "Net-(CHG1-PadC)") (pinfunction "C") (pintype "passive") (solder_mask_margin 0.0508) (tstamp da314fa5-f047-4f3f-bd6c-a59943966556))
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 08232b4e-3eed-4099-8928-969817d1747a)
     (at 85.1103 71.284 -90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -358,7 +358,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp bdfc9df7-0a09-44be-8e52-f965c2d2d08a))
   )
 
-  (footprint "lib_fr:KMR211NG LFS" (layer "F.Cu")
+  (footprint "lib_fp:KMR211NG LFS" (layer "F.Cu")
     (tedit 61E33D1B) (tstamp 0ccb4f32-0105-4fe7-9862-ef43621be249)
     (at 97.282 52.578 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -438,7 +438,7 @@
       (net 36 "/~{RESET}") (pinfunction "4") (pintype "unspecified") (tstamp d2193c6b-a2a6-402a-ab00-07bd951f8c13))
   )
 
-  (footprint "lib_fr:0805-NO" (layer "F.Cu")
+  (footprint "lib_fp:0805-NO" (layer "F.Cu")
     (tedit 0) (tstamp 158d7dd3-e36c-450a-83b3-73ce4d950909)
     (at 100 72.05)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -473,7 +473,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp e6200739-a290-4f1c-8a4b-c01b538e79f8))
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 216fbc52-43c0-46dd-bbe4-eb857c466d96)
     (at 81.1063 62.198 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -517,7 +517,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 51c35612-239c-46f4-b749-f339b582bca5))
   )
 
-  (footprint "lib_fr:MOUNTINGHOLE_2.5_PLATED" (layer "F.Cu")
+  (footprint "lib_fp:MOUNTINGHOLE_2.5_PLATED" (layer "F.Cu")
     (tedit 61E34528) (tstamp 21e75ae2-f2b0-4a50-b0ae-824b94b90655)
     (at 105.41 46.99 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -709,7 +709,7 @@
     )
   )
 
-  (footprint "Resistor_SMD:R_0603_1608Metric" (layer "F.Cu")
+  (footprint "lib_fp:R_0603_1608Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 32a1fdac-a9de-42d2-b57d-1d6c6136a786)
     (at 100.45 61.65 -90)
     (descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
@@ -751,7 +751,7 @@
     )
   )
 
-  (footprint "lib_fr:MOUNTINGHOLE_2.5_PLATED" (layer "F.Cu")
+  (footprint "lib_fp:MOUNTINGHOLE_2.5_PLATED" (layer "F.Cu")
     (tedit 61E34528) (tstamp 342cc273-8a6c-4e32-b5a2-794ae6bfebf2)
     (at 66.04 46.99)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -943,7 +943,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 347c44ee-f4a2-459c-a4da-8c4a511e6573)
     (at 91.186 57.15 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -987,7 +987,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 3e9635fe-023d-471e-8e69-40099cf4f4ec))
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 3552cec4-f190-46ea-8e83-a42b135b8dff)
     (at 81.1063 63.722 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1031,7 +1031,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 9a567967-c24a-4ce0-bfbc-8acda99218d8))
   )
 
-  (footprint "lib_fr:CHIPLED_0805_NOOUTLINE" (layer "F.Cu")
+  (footprint "lib_fp:CHIPLED_0805_NOOUTLINE" (layer "F.Cu")
     (tedit 0) (tstamp 3ff76a2d-0cd1-45f3-8300-01fd898b998d)
     (at 97.282 47.498)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1141,7 +1141,7 @@
       (net 2 "GND") (pinfunction "C") (pintype "passive") (solder_mask_margin 0.0508) (tstamp f567ebe0-93fd-43fa-b74d-07b5c71a5caf))
   )
 
-  (footprint "Resistor_SMD:R_0603_1608Metric" (layer "F.Cu")
+  (footprint "lib_fp:R_0603_1608Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 45f03035-54b2-44d5-8301-69906ca66712)
     (at 103.15 68.7 90)
     (descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
@@ -1183,7 +1183,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 4c1e6910-95cf-40d6-9b5e-7f84a40f8b24)
     (at 88.9 58.547)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1227,7 +1227,7 @@
       (net 41 "Net-(R7-Pad2)") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 0fdbbd5a-25d2-4301-8d46-f973f9821e13))
   )
 
-  (footprint "lib_fr:MOUNTINGHOLE_2.5_PLATED" (layer "F.Cu")
+  (footprint "lib_fp:MOUNTINGHOLE_2.5_PLATED" (layer "F.Cu")
     (tedit 61E34528) (tstamp 4c843176-8678-494a-b7e7-2b8550b8b127)
     (at 105.41 92.71)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1419,7 +1419,7 @@
     )
   )
 
-  (footprint "lib_fr:0805-NO" (layer "F.Cu")
+  (footprint "lib_fp:0805-NO" (layer "F.Cu")
     (tedit 0) (tstamp 5228f153-8cef-4142-be47-c4c2008824ea)
     (at 102.6 61 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1454,7 +1454,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 357f3f38-571d-411b-870b-d2de90c010ea))
   )
 
-  (footprint "lib_fr:CAM-M8C-0" (layer "F.Cu")
+  (footprint "lib_fp:CAM-M8C-0" (layer "F.Cu")
     (tedit 61F317BF) (tstamp 5644d770-110b-4322-a561-85e83bfe8b36)
     (at 86.7 87.7 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1580,7 +1580,7 @@
     )
   )
 
-  (footprint "lib_fr:TESTPOINT_ROUND_1.5MM" (layer "F.Cu")
+  (footprint "lib_fp:TESTPOINT_ROUND_1.5MM" (layer "F.Cu")
     (tedit 61F18C75) (tstamp 57232a16-2a98-4e13-b823-4900ba5525f9)
     (at 70 79.5)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1599,7 +1599,7 @@
       (net 1 "/VBACKUP") (pinfunction "P$1") (pintype "bidirectional") (solder_mask_margin 0.0508) (tstamp 6ef73003-efc4-458e-8fad-836e2087f7b0))
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 5bbe0a32-7944-460c-ae41-1b9978ef8b3f)
     (at 99.568 48.26 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1643,7 +1643,7 @@
       (net 39 "Net-(L2-PadA)") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 3a7fbff6-5f27-472a-bcc1-181e9c3ea75e))
   )
 
-  (footprint "lib_fr:MOUNTINGHOLE_2.5_PLATED" (layer "F.Cu")
+  (footprint "lib_fp:MOUNTINGHOLE_2.5_PLATED" (layer "F.Cu")
     (tedit 61E34528) (tstamp 69436b5a-cb90-4e87-9b20-6b8a236790fa)
     (at 66.04 92.71)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1835,7 +1835,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 700dc903-a8ea-4427-bcdb-9bb14000466e)
     (at 91.05 73.45)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1879,7 +1879,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 2aaef12d-a2d2-453f-94df-20ab915a40e9))
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 7159f616-0f95-4647-959a-b95456ccb4ce)
     (at 83.5863 71.284 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1923,7 +1923,7 @@
       (net 20 "/D9") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 291dcb04-9602-44a1-ad42-4379a9874dc3))
   )
 
-  (footprint "lib_fr:XTAL3215" (layer "F.Cu")
+  (footprint "lib_fp:XTAL3215" (layer "F.Cu")
     (tedit 61E472C6) (tstamp 71c376d6-98ea-436c-a2fc-3f3c9cd29b55)
     (at 84.1543 63.214 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -1961,7 +1961,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 7345301f-9d58-49ab-98d8-422641a819e8)
     (at 73.45 48.75 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2005,7 +2005,7 @@
       (net 14 "Net-(D2-PadA)") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp d448241e-1162-4cfb-926f-571a6b109ba6))
   )
 
-  (footprint "lib_fr:SOT23-5" (layer "F.Cu")
+  (footprint "lib_fp:SOT23-5" (layer "F.Cu")
     (tedit 0) (tstamp 77b4692e-c597-4889-ae66-457a5376c05a)
     (at 99.314 57.4 90)
     (descr "<b>Small Outline Transistor</b> - 5 Pin")
@@ -2069,7 +2069,7 @@
       (net 4 "+3V3") (pinfunction "OUT") (pintype "power_in") (solder_mask_margin 0.0508) (tstamp 509df822-9ba4-4916-8726-a3c0bb3c9027))
   )
 
-  (footprint "lib_fr:0805-NO" (layer "F.Cu")
+  (footprint "lib_fp:0805-NO" (layer "F.Cu")
     (tedit 0) (tstamp 7d44b82f-0bd7-4139-a4ba-7f93009389f2)
     (at 94.488 53.655 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2104,7 +2104,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp eebcfaf0-6dc9-4ebc-a826-fa766441a24f))
   )
 
-  (footprint "lib_fr:4UCONN_20329_V2" (layer "F.Cu")
+  (footprint "lib_fp:4UCONN_20329_V2" (layer "F.Cu")
     (tedit 61E34BDD) (tstamp 858f4775-46ab-42e6-8367-aeec928d7188)
     (at 90.1696 48.8166 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2356,7 +2356,7 @@
     )
   )
 
-  (footprint "lib_fr:U.FL" (layer "F.Cu")
+  (footprint "lib_fp:U.FL" (layer "F.Cu")
     (tedit 61F219A4) (tstamp 8c510b88-6ba2-4067-a221-8a79f1f0b80d)
     (at 98.7 90.1 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2392,7 +2392,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp 8d8857df-44ee-4568-aeee-791f355e7d7e)
     (at 78.9432 49.6316)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2436,7 +2436,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp f7b7cea4-bd16-4fa4-8053-33529b18f1b2))
   )
 
-  (footprint "lib_fr:0805-NO" (layer "F.Cu")
+  (footprint "lib_fp:0805-NO" (layer "F.Cu")
     (tedit 0) (tstamp 8e0737f5-7ffc-49c3-ac10-ab0674a4f078)
     (at 87.122 52.451 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2471,7 +2471,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 2211d67a-26a8-48d7-b5d1-c649ad3c14fc))
   )
 
-  (footprint "lib_fr:CHIPLED_0603_NOOUTLINE" (layer "F.Cu")
+  (footprint "lib_fp:CHIPLED_0603_NOOUTLINE" (layer "F.Cu")
     (tedit 0) (tstamp 97fe3c1b-0b5f-4d26-944e-7bd0176c249a)
     (at 74.2 45.7 -90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2567,7 +2567,7 @@
       (net 2 "GND") (pinfunction "C") (pintype "passive") (solder_mask_margin 0.0508) (tstamp b14efb0c-730e-45a8-8a58-5fea130ff4d7))
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp a4cf10ae-e3cb-4278-abf3-3760773d1295)
     (at 84.3 53.35 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2611,7 +2611,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 291a95a3-41ee-4c07-86c5-daa7f580d890))
   )
 
-  (footprint "Resistor_SMD:R_0603_1608Metric" (layer "F.Cu")
+  (footprint "lib_fp:R_0603_1608Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp a5bbab54-398b-416c-a835-8ab886be74b5)
     (at 94.3 90.1 180)
     (descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
@@ -2653,7 +2653,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp a9bba13f-c416-4a8d-b71c-f7faadd5d853)
     (at 82.5543 66.564 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2697,7 +2697,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp cb428b0a-31d9-482e-aaeb-be1bd1808598))
   )
 
-  (footprint "lib_fr:SOD-123" (layer "F.Cu")
+  (footprint "lib_fp:SOD-123" (layer "F.Cu")
     (tedit 0) (tstamp abb28894-cdcb-4aaf-880a-3f35f728996a)
     (at 103.8 51.5)
     (descr "<b>SOD-123</b>\n<p>Source: http://www.diodes.com/datasheets/ds30139.pdf</p>")
@@ -2748,7 +2748,7 @@
       (net 5 "VBUS") (pinfunction "C") (pintype "passive") (solder_mask_margin 0.0508) (tstamp e9b48fa5-cde0-4e05-a40c-dfeb25f5dacb))
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp b4d13085-8a3b-4390-a0db-2ff59198b1b1)
     (at 79.756 47.205 -90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2792,7 +2792,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 17838b9a-b014-4a97-8fc1-014ede64d6a1))
   )
 
-  (footprint "lib_fr:0805-NO" (layer "F.Cu")
+  (footprint "lib_fp:0805-NO" (layer "F.Cu")
     (tedit 0) (tstamp b6eb847b-14ea-44e8-80bd-80262c9014da)
     (at 78.6 89.9 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2827,7 +2827,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 0d4c28e2-948b-4d4a-8c13-8a199f9b6a2d))
   )
 
-  (footprint "lib_fr:CR1220-2" (layer "F.Cu")
+  (footprint "lib_fp:CR1220-2" (layer "F.Cu")
     (tedit 61E1948E) (tstamp ba9682b8-bc2c-48fe-9a56-dc9e665776d1)
     (at 73.7 70.5 -90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -2891,7 +2891,7 @@
     )
   )
 
-  (footprint "lib_fr:QFN24_4MM_SMSC" (layer "F.Cu")
+  (footprint "lib_fp:QFN24_4MM_SMSC" (layer "F.Cu")
     (tedit 0) (tstamp bef38330-3007-442b-973e-b55ce314b135)
     (at 77.05 56.15 -90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -3028,7 +3028,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp c1ebeb88-387f-4147-ba51-96f9fc66569f)
     (at 71.453 55.274 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -3072,7 +3072,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 89c507ac-bb8b-480b-8f8d-132bce5ca999))
   )
 
-  (footprint "Resistor_SMD:R_0603_1608Metric" (layer "F.Cu")
+  (footprint "lib_fp:R_0603_1608Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp d018cc3d-57ff-4aef-9c3a-dc97fc39001d)
     (at 94.3 91.8 180)
     (descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
@@ -3114,7 +3114,7 @@
     )
   )
 
-  (footprint "lib_fr:ATSAMD21G15B-AU" (layer "F.Cu")
+  (footprint "lib_fp:ATSAMD21G15B-AU" (layer "F.Cu")
     (tedit 0) (tstamp d076431f-a942-4207-9db2-d7b6a48ac4c6)
     (at 91.6 66.55)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -3560,7 +3560,7 @@
     )
   )
 
-  (footprint "lib_fr:CHIPLED_0805_NOOUTLINE" (layer "F.Cu")
+  (footprint "lib_fp:CHIPLED_0805_NOOUTLINE" (layer "F.Cu")
     (tedit 0) (tstamp d4a688f7-9dc8-4cb5-9bc8-13802b3cdac1)
     (at 81.788 47.244)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -3670,7 +3670,7 @@
       (net 38 "Net-(L1-PadC)") (pinfunction "C") (pintype "passive") (solder_mask_margin 0.0508) (tstamp c3b6db9b-641d-411e-b7e2-f8b30d3e12bc))
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp d57f18b0-cb69-49f6-a7ba-9bdfa7d33a07)
     (at 103.2 57.3 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -3714,7 +3714,7 @@
       (net 15 "/EN") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 4ea044de-f445-4a8b-9af4-eabb18a746d6))
   )
 
-  (footprint "Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical" (layer "F.Cu")
+  (footprint "lib_fp:PinHeader_1x08_P2.54mm_Vertical" (layer "F.Cu")
     (tedit 59FED5CC) (tstamp e7e7d746-752d-44bf-8913-11c2a6fd845b)
     (at 105.7 60.8)
     (descr "Through hole straight pin header, 1x08, 2.54mm pitch, single row")
@@ -3773,7 +3773,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp ec9d310b-8b9a-4b79-ac9f-085303faf95b)
     (at 71.4 58.45 180)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -3817,7 +3817,7 @@
       (net 42 "/AD0") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 92d9cdb6-aab7-4ae5-bda1-f235038d75ff))
   )
 
-  (footprint "lib_fr:SOT23-5" (layer "F.Cu")
+  (footprint "lib_fp:SOT23-5" (layer "F.Cu")
     (tedit 0) (tstamp f273a778-1a59-47d4-be5e-052f7089eb57)
     (at 88.1079 55.88 90)
     (descr "<b>Small Outline Transistor</b> - 5 Pin")
@@ -3881,7 +3881,7 @@
       (net 40 "Net-(R6-Pad1)") (pinfunction "PROG") (pintype "input") (solder_mask_margin 0.0508) (tstamp 13519bb4-6f37-4895-a5db-069b465c8754))
   )
 
-  (footprint "lib_fr:DPS310XTSA1" (layer "F.Cu")
+  (footprint "lib_fp:DPS310XTSA1" (layer "F.Cu")
     (tedit 61E33997) (tstamp fc3a8b70-8007-4cf9-b92f-ce7118f490c9)
     (at 101.2 64.95 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -3992,7 +3992,7 @@
     )
   )
 
-  (footprint "lib_fr:0603-NO" (layer "F.Cu")
+  (footprint "lib_fp:0603-NO" (layer "F.Cu")
     (tedit 0) (tstamp fed9ee62-6e34-4035-b92e-3626a6b89dfa)
     (at 100.35 68.8 90)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -4036,7 +4036,7 @@
       (net 2 "GND") (pinfunction "2") (pintype "passive") (solder_mask_margin 0.0508) (tstamp 8ba04d4c-e8e2-42da-a749-0f2485ee882c))
   )
 
-  (footprint "lib_fr:MICROSD" (layer "B.Cu")
+  (footprint "lib_fp:MICROSD" (layer "B.Cu")
     (tedit 0) (tstamp 51caa7ea-6c99-4c62-9b88-5588846f741f)
     (at 80.14 75.8 90)
     (descr "Courtesy: Adafruit Industries")
@@ -4328,7 +4328,7 @@
     )
   )
 
-  (footprint "lib_fr:JSTPH2" (layer "B.Cu")
+  (footprint "lib_fp:JSTPH2" (layer "B.Cu")
     (tedit 61E33511) (tstamp 65a03f17-ced8-4246-a43c-1368e802afa0)
     (at 71.05 56.55 90)
     (descr "2-Pin JST PH Series Right-Angle Connector (+/- for batteries)")
@@ -4383,7 +4383,7 @@
     )
   )
 
-  (footprint "lib_fr:450405020524" (layer "B.Cu")
+  (footprint "lib_fp:450405020524" (layer "B.Cu")
     (tedit 0) (tstamp 95206cf0-1a04-429e-bd36-d5d409b100de)
     (at 71.12 49.784)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -4467,7 +4467,7 @@
     (pad "5" thru_hole circle locked (at 6.124999 -4.100068) (size 1.397 1.397) (drill 0.889) (layers *.Cu *.Mask) (tstamp 832f2ebe-661f-4bd6-92dc-9b89c5810828))
   )
 
-  (footprint "lib_fr:3221-10-0300-00-TR" (layer "B.Cu")
+  (footprint "lib_fp:3221-10-0300-00-TR" (layer "B.Cu")
     (tedit 61E829BB) (tstamp a56e1eab-c059-4713-9e48-fab4bfac8b5e)
     (at 99.568 54.61)
     (property "Sheetfile" "dropkick.kicad_sch")
@@ -4563,7 +4563,7 @@
     )
   )
 
-  (footprint "Symbol:OSHW-Logo2_14.6x12mm_SilkScreen" locked (layer "B.Cu")
+  (footprint "lib_fp:OSHW-Logo2_14.6x12mm_SilkScreen" locked (layer "B.Cu")
     (tedit 0) (tstamp ae240b8d-a35d-4970-bcdc-d9617850da1f)
     (at 90.2 73.7 180)
     (descr "Open Source Hardware Symbol")
