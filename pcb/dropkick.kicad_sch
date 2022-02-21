@@ -6257,7 +6257,7 @@
     (property "Value" "3221-10-0300-00-TR" (id 1) (at 127 207.5434 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "Footprint" "logger:3221-10-0300-00-TR" (id 2) (at 125.73 217.17 0)
+    (property "Footprint" "lib_fp:3221-10-0300-00-TR" (id 2) (at 125.73 217.17 0)
       (effects (font (size 1.27 1.27)) (justify left bottom) hide)
     )
     (property "Datasheet" "https://media.digikey.com/pdf/Data%20Sheets/CNC%20Tech%20PDFs/3221-XX-0300-00-TR_Dwg.pdf" (id 3) (at 125.73 217.17 0)
@@ -6802,7 +6802,7 @@
       (reference "J1") (unit 1) (value "Conn_01x08") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical")
     )
     (path "/de4ebb72-f6e1-42e1-acf2-16277a14855f"
-      (reference "JP2") (unit 1) (value "3221-10-0300-00-TR") (footprint "logger:3221-10-0300-00-TR")
+      (reference "JP2") (unit 1) (value "3221-10-0300-00-TR") (footprint "lib_fp:3221-10-0300-00-TR")
     )
     (path "/d777be5d-c510-4a8d-bd61-5cfa760360b6"
       (reference "L1") (unit 1) (value "GREEN") (footprint "CHIPLED_0805_NOOUTLINE")
