@@ -17,7 +17,9 @@ _autosave-*
 *.tmp
 *-save.pro
 *-save.kicad_pcb
+
 fp-info-cache
+gerber
 
 *.bin
 
@@ -27,6 +29,7 @@ fp-info-cache
 # Autorouter files (exported from Pcbnew)
 *.dsn
 *.ses
+*.rules
 
 # Exported BOM files
 *.xml
