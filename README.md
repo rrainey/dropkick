@@ -62,7 +62,7 @@ The [u-blox Hardware Integration Manual](https://www.u-blox.com/en/docs/UBX-1601
 
 > * Time: 60 - 120 s. If the preheat is insufficient, rather large solder balls tend to generate. Conversely, if performed excessively, fine balls and large balls will be generated in clusters.
 
-> * End temperature: 150 - 200 °C. If the temperature is too low, non-melting tends to be caused inareas containing large heat capacity.Heating/ Reflow phase. 
+> * End temperature: 150 - 200 °C. If the temperature is too low, non-melting tends to be caused inareas containing large heat capacity. 
 
 > ### Heating and Reflow Phase
 
