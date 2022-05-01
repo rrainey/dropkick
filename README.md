@@ -33,6 +33,47 @@ USB micro-B connector (for recharging and programming)
 
 Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino programming via the USB connector.
 
+## PCB Notes
+My prototype circuit boards were supplied by either OSHPark or PCBgogo.
+
+## Solder Reflow
+
+The [u-blox Hardware Integration Manual](https://www.u-blox.com/en/docs/UBX-16018358) provides some detailed guidelines for soldering the GNSS module to the PCB:
+
+> ### Soldering paste
+
+>Use of "no clean" soldering paste is highly recommended, as it does not require cleaning after thesoldering process has taken place. The paste in the example below meets these criteria.
+
+> * Soldering paste: OM338 SAC405 / Nr.143714 (Cookson Electronics)
+
+> * Alloy specification: Sn 95.5/ Ag 4/ Cu 0.5 (95.5% tin/ 4% silver/ 0.5% copper)
+
+> * Melting temperature: 217 °C
+
+> * Stencil thickness: 120 um
+
+> The final choice of the soldering paste depends on the approved manufacturing procedures.The paste-mask geometry for applying soldering paste should meet the recommendations.Reflow solderingA convection-type soldering oven is highly recommended over the infrared-type radiation oven.Convection-heated ovens allow precise control of the temperature, and all parts will heat up evenly, regardless of material properties, thickness of components and surface color. As a reference, see the "IPC-7530 Guidelines for temperature profiling for mass soldering (reflowand wave) processes”, published in 2001.
+
+> ### Preheat phase
+
+>During the initial heating of component leads and balls, residual humidity will be dried out. Note that this preheat phase will not replace prior baking procedures.
+
+> * Temperature rise rate: max. 3 °C/s. If the temperature rise is too rapid in the preheat phase it maycause excessive slumping.
+
+> * Time: 60 - 120 s. If the preheat is insufficient, rather large solder balls tend to generate. Conversely, if performed excessively, fine balls and large balls will be generated in clusters.
+
+> * End temperature: 150 - 200 °C. If the temperature is too low, non-melting tends to be caused inareas containing large heat capacity.Heating/ Reflow phase. 
+
+> ### Heating and Reflow Phase
+
+> The temperature rises above the liquidus temperature of 217 °C. Avoid a sudden rise in temperatureas the slump of the paste could become worse.
+
+> * Limit time above 217 °C liquidus temperature: 40 - 60s
+
+> * Peak reflow temperature: 245 °C
+
+Since SAC405 solder paste was not available in hobbyist-friendly quantities, I opted to use SAC305 for my prototype. The melting qualities are quite similar, and it retains the essential "no clean" properties required by U-blox -- at the cost of having slightly less sound solder connections.
+
 ## Enclosure Notes
 The enclosure is designed to be 3D printed. Tolerances between the upper enclosure, lower enclosure, and the PCB
 are quite tight - printing precision will be important. Since 3D printing technologies will vary in their precision, 
