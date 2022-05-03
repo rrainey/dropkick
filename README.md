@@ -5,7 +5,7 @@
 This is a stand-alone, battery-powered data logger designed to be
 carried by a skydiver during their jump.  It includes a GNSS (GPS) receiver, IMU, and altitude sensors. Data from all sensors is logged onto a Micro-SD card. The logged data can be reviewed post-jump by to-be-designed software.
 
-One objective of this project is to research compact GNSS receiver performance. As such, there are currently two different u-blox receiver ICs that I'm testing. There is a distict PCB for each board variant.
+One objective of this project is to research compact GNSS receiver performance in the dynamic environment that a skydiver routinely experiences. As such, there are currently two different u-blox receiver ICs that I'm testing. There is a distict PCB for each board variant.
 
 ![](images/dropkick-03.png)
 
