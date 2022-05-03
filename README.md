@@ -7,7 +7,7 @@ carried by a skydiver during their jump.  It includes a GPS, IMU, and altitude s
 
 ![](images/dropkick-03.png)
 
-## The Global Chip Shortage
+### The Global Chip Shortage
 **April 2022** - The global semiconductor shortage is very real and impacting my progress on this project. GPS and IMU chips, in particular, are hard to find. For my own use, I'm currently planning to cannibalize these chips from existing boards to get an operational prototype.  If you are trying to reproduce my work, though, you are on your own.
 
 
