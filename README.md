@@ -40,7 +40,7 @@ USB micro-B connector (for recharging and programming)
 Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino programming via the USB connector.
 
 ## PCB Notes
-My prototype circuit boards were supplied by either OSHPark or PCBgogo.
+My prototype circuit boards were fabricated by both OSHPark or PCBgogo. Both are excellent manufacturers for hobbyists.
 
 ## Solder Reflow
 
