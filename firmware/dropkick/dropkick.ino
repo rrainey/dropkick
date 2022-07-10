@@ -38,10 +38,20 @@
 /*
  * Operating mode
  */
-#define OPS_FLIGHT       0 // normal mode (NOT YET IMPLEMENTED)
-#define OPS_GROUND_TEST  1 // for testing; uses horizontal movement as an analogue to altitude changes
+#define OPS_FLIGHT        0 // normal mode; altimeter used to detect motion
+#define OPS_STATIC_TEST   1  // for testing; time based simulation of vertical motion
+#define OPS_GROUND_TEST   2  // for testing; uses GPS horizontal movement as an analogue to altitude changes
 
-int nOpMode = OPS_GROUND_TEST;
+#define OPS_MODE OPS_STATIC_TEST
+
+int nOpMode = OPS_MODE;
+
+#if (OPS_MODE == OPS_STATIC_TEST) 
+#include "1976AtmosphericModel.h"
+
+sim1976AtmosphericModel g_atm;
+
+#endif
 
 #define TEST_SPEED_THRESHOLD_KTS  6.0
 
@@ -348,6 +358,199 @@ void updateTestStateMachine() {
   }
 }
 
+void updateStateMachine() {
+
+  /**
+   * State machine using altitude readings to detect motion
+   */
+
+  switch (nAppState) {
+
+  case STATE_WAIT:
+    if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+
+      Serial.println("Switching to STATE_IN_FLIGHT");
+      
+      // open log file
+      generateLogname( logpath );
+      logFile = SD.open( logpath, FILE_WRITE );
+
+      logFile.println( NMEA_APP_STRING );
+
+      // log data; jump to 5HZ logging
+      //GPS.sendCommand(PMTK_API_SET_FIX_CTL_5HZ);
+      //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ);
+
+      // Activate altitude / battery sensor logging
+      bTimer4Active = true;
+      timer4_ms = TIMER4_INTERVAL_MS;
+
+      // Activate periodic log file flushing
+      startLogFileFlushing();
+
+      // Activate "in flight" LED blinking
+      setBlinkState ( BLINK_STATE_LOGGING );
+      
+      nAppState = STATE_IN_FLIGHT;
+    }
+    break;
+
+  case STATE_IN_FLIGHT:
+    {
+
+      if (GPS.speed < TEST_SPEED_THRESHOLD_KTS) {
+        Serial.println("Switching to STATE_LANDED_1");
+        nAppState = STATE_LANDED_1;
+        timer1_ms = TIMER1_INTERVAL_MS;
+        bTimer1Active = true;
+      }
+    }
+    break;
+
+  case STATE_LANDED_1:
+    {
+
+      if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+        Serial.println("Switching to STATE_IN_FLIGHT");
+        nAppState = STATE_IN_FLIGHT;
+        bTimer1Active = false;
+      }
+      else if (bTimer1Active && timer1_ms <= 0) {
+        GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+        bTimer4Active = false;
+        Serial.println("Switching to STATE_WAIT");
+        setBlinkState ( BLINK_STATE_OFF );
+        nAppState = STATE_WAIT;
+        bTimer1Active = false;
+        
+        stopLogFileFlushing();
+        logFile.close();
+        
+      }
+      
+    }
+    break;
+
+  case STATE_LANDED_2:
+    {
+      
+      if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+        nAppState = STATE_IN_FLIGHT;
+        bTimer1Active = false;
+      }
+      else if (bTimer1Active && timer1_ms <= 0) {
+        GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+        bTimer4Active = false;
+        setBlinkState ( BLINK_STATE_OFF );
+        nAppState = STATE_WAIT;
+        Serial.println("Switching to STATE_WAIT");
+        bTimer1Active = false;
+        bTimer5Active = false;
+
+        stopLogFileFlushing();
+        logFile.close();
+      }
+    }
+    break;
+  }
+}
+
+void sampleTempAndPressure()
+{
+  if (OPS_MODE != OPS_STATIC_TEST) {
+    
+    sensors_event_t temp_event, pressure_event;
+  
+    if (dps.temperatureAvailable()) {
+      dps_temp->getEvent(&temp_event);
+      /*
+      Serial.print(F("Temperature = "));
+      Serial.print(temp_event.temperature);
+      Serial.println(" *C");
+      Serial.println();
+      */
+    }
+  
+    // Reading pressure also reads temp so don't check pressure
+    // before temp!
+    if (dps.pressureAvailable()) {
+      
+      dps_pressure->getEvent(&pressure_event);
+
+      if (nAppState == STATE_WAIT) {
+        nHGround_feet = dps.readAltitude() * 3.28084;
+      }
+      else {
+        logFile.print("$PENV,");
+        logFile.print(millis());
+        logFile.print(",");
+        logFile.print(pressure_event.pressure);
+        logFile.print(",");
+        logFile.print(dps.readAltitude());
+        logFile.println();
+      }
+    }
+    else {
+      
+      /*
+       * Simulate interpolated altitide based on this schedule:
+       * 
+       * Time (min)     Alt(ft)
+       *     0             600
+       *     2             600
+       *     12           6500
+       *     13           6500
+       *     14           3500
+       *     17            600
+       *     19            600 
+       *     
+       *     Values clamped at finish to last value.
+       */
+
+#define MINtoMS (x) (x * 60 * 1000)
+
+      struct _vals {
+        int time_ms;
+        int alt_ft;
+      };
+
+      struct _vals *p, *prev;
+
+      int alt_ft;
+      
+      struct _vals table[7] = {
+        { MINtoMS(0), 600 },
+        { MINtoMS(2), 600 },
+        { MINtoMS(12), 6500 },
+        { MINtoMS(13), 6500 },
+        { MINtoMS(14), 3500 },
+        { MINtoMS(17), 600 },
+        { MINtoMS(19), 600 }
+       };
+
+       int t = millis();
+
+       if (t >= MINtoMS(19) || t == 0 ) {
+        alt_ft = 600;
+       }
+       else {
+        *p = table[0];
+        for (i=1; i<7; ++i) {
+          *prev = p;
+          *p = table[i];
+
+          if (t < p->time_ms) {
+            alt_ft =  prev->alt_ft + (t - prev->time_ms) * (p->alt_ft - prev->alt_ft) / (p->time_ms - prev->time_ms);
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
 void setup() {
 
   blinkState = BLINK_STATE_OFF;
@@ -556,44 +759,16 @@ void loop() {
    * GPS NMEA processing loop.
    */
 
-   updateTestStateMachine();
+  if (nOpsMode == OPS_GROUND_TEST) {
+    updateTestStateMachine();
+  }
+  else {
+    updateStateMachine();
+  }
 
-   /*
-    * 
-    */
-
-    sensors_event_t temp_event, pressure_event;
+  sampleTempAndPressure();
   
-    if (dps.temperatureAvailable()) {
-      dps_temp->getEvent(&temp_event);
-      /*
-      Serial.print(F("Temperature = "));
-      Serial.print(temp_event.temperature);
-      Serial.println(" *C");
-      Serial.println();
-      */
-    }
-  
-    // Reading pressure also reads temp so don't check pressure
-    // before temp!
-    if (dps.pressureAvailable()) {
-      
-      dps_pressure->getEvent(&pressure_event);
 
-      if (nAppState == STATE_WAIT) {
-        nHGround_feet = dps.readAltitude() * 3.28084;
-      }
-      else {
-        logFile.print("$PENV,");
-        logFile.print(millis());
-        logFile.print(",");
-        logFile.print(pressure_event.pressure);
-        logFile.print(",");
-        logFile.print(dps.readAltitude());
-        logFile.println();
-      }
-      
-    }
 
   /*
    * RED LED Blink Logic
