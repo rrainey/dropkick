@@ -602,7 +602,7 @@ void sampleAndLogAltitude()
     else {
       
       /*
-       * Simulate interpolated altitide based on this schedule:
+       * Simulate interpolated altitude based on this schedule:
        * 
        * Time (min)     Alt(ft)
        *     0             600
@@ -710,6 +710,9 @@ void SFE_UBLOX_GNSS::processNMEA(char incoming)
   nmea.process(incoming);
 
   if (incoming == '\n') {
+
+    *pNMEA++ = '\0';
+    
     if (logFile) {
       logFile.print( incomingNMEA );
       flushLog();
@@ -736,7 +739,7 @@ void setup() {
 
   lastTime_ms = millis();
 
-  // Wait (maximim of 30 seconds) for hardware serial to appear
+  // Wait (maximum of 30 seconds) for hardware serial to appear
   while (!Serial) {
     if (millis() - lastTime_ms > 30000) {
       break;
