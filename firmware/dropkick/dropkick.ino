@@ -21,7 +21,10 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_GPS.h>
 #include <SPI.h>
-#include <SD.h>
+#include <SDPlus.h>
+#include <Adafruit_TinyUSB.h>
+
+Adafruit_USBD_MSC usb_msc;
 
 #define APP_STRING  "Sidekick, version 0.50"
 #define LOG_VERSION 1
@@ -48,8 +51,6 @@
 
 #define OPS_MODE OPS_STATIC_TEST
 
-int g_nOpsMode = OPS_MODE;
-
 #if (OPS_MODE == OPS_STATIC_TEST) 
 //#include "1976AtmosphericModel.h"
 
@@ -64,7 +65,7 @@ int g_nOpsMode = OPS_MODE;
 /*
  * Minutes to milliseconds
  */
-#define MINtoMS(x) (x * 60 * 1000)
+#define MINtoMS(x) ((x) * 60 * 1000)
 
 /*
  * Automatic jump logging
@@ -524,6 +525,40 @@ void updateFlightStateMachine() {
   }
 }
 
+/*
+ * Start of USB Disk callbacks
+ */
+
+// Callback invoked when received READ10 command.
+// Copy disk's data to buffer (up to bufsize) and
+// return number of copied bytes (must be multiple of block size)
+int32_t msc_read_cb (uint32_t lba, void* buffer, uint32_t bufsize)
+{
+  (void) bufsize;
+  return SD.getCard().readBlock(lba, (uint8_t*) buffer) ? 512 : -1;
+}
+
+// Callback invoked when received WRITE10 command.
+// Process data in buffer to disk's storage and 
+// return number of written bytes (must be multiple of block size)
+int32_t msc_write_cb (uint32_t lba, uint8_t* buffer, uint32_t bufsize)
+{
+  (void) bufsize;
+  return SD.getCard().writeBlock(lba, buffer) ? 512 : -1;
+}
+
+// Callback invoked when WRITE10 command is completed (status received and accepted by host).
+// used to flush any pending cache.
+void msc_flush_cb (void)
+{
+  // nothing to do
+}
+
+
+/*
+ * End of USB Disk callbacks
+ */
+
 void sampleAndLogAltitude()
 {
 
@@ -553,7 +588,7 @@ void sampleAndLogAltitude()
 
     dPressure_hPa = pressure_event.pressure;
 
-    if (g_nOpsMode != OPS_STATIC_TEST) {
+    if (OPS_MODE != OPS_STATIC_TEST) {
 
       dAlt_ft = dps.readAltitude() * 3.28084;
 
@@ -693,6 +728,14 @@ void setup() {
 
   delay(500);
 
+  /*
+   * Prepare for USB disk interactions and initialize the SD card interface
+   */
+  usb_msc.setID("Arduino", "SD Card", "1.0");
+  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);
+  usb_msc.setUnitReady(false);
+  usb_msc.begin();
+
   if (!SD.begin( SD_CHIP_SELECT )) {
 
     Serial.println("SD card initialization failed!");
@@ -703,7 +746,7 @@ void setup() {
 
   delay(500);
 
-  //Wire.setClock( 400000 );
+  Wire.setClock( 400000 );
 
   Serial.println("Initialize peripheral ICs");
 
@@ -724,15 +767,15 @@ void setup() {
   delay(500);
 
   if (! dps.begin_I2C(DPS310_I2C_ADDR, &Wire)) {
-    Serial.println("Failed to find DPS310 chip");
+    Serial.println("Failed to find DPS310 chip; stopping");
     while (1) yield();
   }
   Serial.println("DPS310 present");
 
   delay(500);
 
-  dps.configurePressure(DPS310_16HZ, DPS310_16SAMPLES);
-  dps.configureTemperature(DPS310_16HZ, DPS310_16SAMPLES);
+  dps.configurePressure(DPS310_4HZ, DPS310_4SAMPLES);
+  dps.configureTemperature(DPS310_4HZ, DPS310_4SAMPLES);
 
   /*
   bme.setTemperatureOversampling(BME680_OS_8X);
@@ -741,6 +784,16 @@ void setup() {
   */
   //bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
   //bme.setGasHeater(320, 150); // 320*C for 150 ms
+
+  if (OPS_MODE == OPS_STATIC_TEST) {
+    Serial.println("Welcome. The device has booted in OPS_STATIC_TEST mode.");
+    Serial.println("");
+    Serial.println("This test will take about 20 minutes to complete. You will see");
+    Serial.println("state change messages for STATE_WAIT, STATE_IN_FLIGHT, and STATE_LANDED_1. ");
+    Serial.println("The test is complete when the device returns to STATE_WAIT.");
+    Serial.println("You may then inspect the information in the last log file generated.");
+    Serial.println("---");
+  }
 
   Serial.println("Switching to STATE_WAIT");
   nAppState = STATE_WAIT;
@@ -858,7 +911,7 @@ void loop() {
    * GPS NMEA processing loop.
    */
 
- if (g_nOpsMode == OPS_GROUND_TEST) {
+ if (OPS_MODE == OPS_GROUND_TEST) {
     updateTestStateMachine();
   }
   else {
