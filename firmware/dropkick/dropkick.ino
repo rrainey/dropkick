@@ -23,9 +23,13 @@
 #include <SPI.h>
 #include <SD.h>
 
-#define APP_STRING  "Sidekick, version 0.20"
+#define APP_STRING  "Sidekick, version 0.50"
 #define LOG_VERSION 1
-#define NMEA_APP_STRING "$PVER,\"Sidekick, version 0.20\",20"
+#define NMEA_APP_STRING "$PVER,\"Sidekick, version 0.50\",50"
+
+#define GPS_I2C_ADDR     0x42
+#define DPS310_I2C_ADDR  0x76
+#define MPU6050_I2C_ADDR 0x69
 
 /**
  * Fatal error codes (to be implemented)
@@ -44,16 +48,23 @@
 
 #define OPS_MODE OPS_STATIC_TEST
 
-int nOpMode = OPS_MODE;
+int g_nOpsMode = OPS_MODE;
 
 #if (OPS_MODE == OPS_STATIC_TEST) 
-#include "1976AtmosphericModel.h"
+//#include "1976AtmosphericModel.h"
 
-sim1976AtmosphericModel g_atm;
+//sim1976AtmosphericModel g_atm;
 
 #endif
 
 #define TEST_SPEED_THRESHOLD_KTS  6.0
+#define OPS_HDOT_THRESHOLD_FPM       300
+#define OPS_HDOT_LAND_THRESHOLD_FPM  100
+
+/*
+ * Minutes to milliseconds
+ */
+#define MINtoMS(x) (x * 60 * 1000)
 
 /*
  * Automatic jump logging
@@ -99,16 +110,73 @@ float measuredBattery_volts;
 int nH_feet = 0;
 
 /*
- * Estimated rate of climb (fps)
+ * Estimated rate of climb (fpm)
  */
-int nHDOT_fps = 0;
-
+int nHDot_fpm = 0;
 /*
  * Estimated ground elevation, ft
  * 
  * Computed while in WAIT state.
  */
 int nHGround_feet = 0;
+
+#define NUM_H_SAMPLES 5
+int nHSample[NUM_H_SAMPLES];
+int nHDotSample[NUM_H_SAMPLES];
+int nNextHSample = 0;
+uint32_t ulLastHSampleMillis;
+
+boolean bFirstPressureSample = true;
+
+/**
+ * Currently unused.
+ */
+int computAvgHDot() {
+  int i;
+  int sum;
+  for(i=0; i<NUM_H_SAMPLES; ++i) {
+    sum += nHDotSample[i];
+  }
+  return sum / 5;
+}
+
+/**
+ * Use pressure altitude samples to estimate rate of climb.
+ * 
+ * Rate of climb is re-estimated every 10 seconds.
+ */
+void updateHDot(float H_feet) {
+
+  uint32_t ulMillis = millis();
+  int nLastHSample_feet;
+  int nInterval_ms =  ulMillis - ulLastHSampleMillis;
+
+  /* update HDot every ten seconds */
+  if (nInterval_ms > 10000) {
+    if (!bFirstPressureSample) {
+      if (nNextHSample == 0) {
+        nLastHSample_feet = nHSample[NUM_H_SAMPLES-1];
+      }
+      else {
+        nLastHSample_feet = nHSample[nNextHSample-1];
+      }
+      nHSample[nNextHSample] = H_feet;
+      nHDotSample[nNextHSample] = (((long) H_feet - nLastHSample_feet) * 60000L) / nInterval_ms;
+      nHDot_fpm = nHDotSample[nNextHSample];
+    }
+    else {
+      bFirstPressureSample = false;
+      nHSample[nNextHSample] = H_feet;
+      nHDotSample[nNextHSample] = 0;
+      nHDot_fpm = 0;
+    }
+
+    ulLastHSampleMillis = ulMillis;
+    if (++nNextHSample >= NUM_H_SAMPLES) {
+      nNextHSample = 0;
+    }
+  }
+}
 
 /*
  * I2C connection to the BME688 pressure/temp sensor
@@ -358,16 +426,15 @@ void updateTestStateMachine() {
   }
 }
 
-void updateStateMachine() {
+void updateFlightStateMachine() {
 
   /**
-   * State machine using altitude readings to detect motion
+   * State machine appropriate for flight
    */
-
   switch (nAppState) {
 
   case STATE_WAIT:
-    if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+    if (nHDot_fpm > OPS_HDOT_THRESHOLD_FPM) {
 
       Serial.println("Switching to STATE_IN_FLIGHT");
       
@@ -397,8 +464,7 @@ void updateStateMachine() {
 
   case STATE_IN_FLIGHT:
     {
-
-      if (GPS.speed < TEST_SPEED_THRESHOLD_KTS) {
+      if (labs(nHDot_fpm) <= OPS_HDOT_LAND_THRESHOLD_FPM) {
         Serial.println("Switching to STATE_LANDED_1");
         nAppState = STATE_LANDED_1;
         timer1_ms = TIMER1_INTERVAL_MS;
@@ -410,7 +476,7 @@ void updateStateMachine() {
   case STATE_LANDED_1:
     {
 
-      if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+      if (labs(nHDot_fpm) >= OPS_HDOT_THRESHOLD_FPM) {
         Serial.println("Switching to STATE_IN_FLIGHT");
         nAppState = STATE_IN_FLIGHT;
         bTimer1Active = false;
@@ -423,7 +489,7 @@ void updateStateMachine() {
         setBlinkState ( BLINK_STATE_OFF );
         nAppState = STATE_WAIT;
         bTimer1Active = false;
-        
+
         stopLogFileFlushing();
         logFile.close();
         
@@ -435,8 +501,9 @@ void updateStateMachine() {
   case STATE_LANDED_2:
     {
       
-      if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+      if (labs(nHDot_fpm) >= OPS_HDOT_THRESHOLD_FPM) {
         nAppState = STATE_IN_FLIGHT;
+        Serial.println("Switching to STATE_IN_FLIGHT");
         bTimer1Active = false;
       }
       else if (bTimer1Active && timer1_ms <= 0) {
@@ -457,40 +524,39 @@ void updateStateMachine() {
   }
 }
 
-void sampleTempAndPressure()
+void sampleAndLogAltitude()
 {
-  if (OPS_MODE != OPS_STATIC_TEST) {
-    
-    sensors_event_t temp_event, pressure_event;
-  
-    if (dps.temperatureAvailable()) {
-      dps_temp->getEvent(&temp_event);
-      /*
-      Serial.print(F("Temperature = "));
-      Serial.print(temp_event.temperature);
-      Serial.println(" *C");
-      Serial.println();
-      */
-    }
-  
-    // Reading pressure also reads temp so don't check pressure
-    // before temp!
-    if (dps.pressureAvailable()) {
-      
-      dps_pressure->getEvent(&pressure_event);
 
-      if (nAppState == STATE_WAIT) {
-        nHGround_feet = dps.readAltitude() * 3.28084;
-      }
-      else {
-        logFile.print("$PENV,");
-        logFile.print(millis());
-        logFile.print(",");
-        logFile.print(pressure_event.pressure);
-        logFile.print(",");
-        logFile.print(dps.readAltitude());
-        logFile.println();
-      }
+  double dAlt_ft;
+  float dPressure_hPa;
+    
+  sensors_event_t temp_event, pressure_event;
+
+  if (dps.temperatureAvailable()) {
+    dps_temp->getEvent(&temp_event);
+    
+    /*
+    Serial.print(F("Temperature = "));
+    Serial.print(temp_event.temperature);
+    Serial.println(" *C");
+    Serial.println();
+    */
+    
+  }
+
+  /*
+   * Note: sampling pressure in dps also samples temperature.
+   */
+  if (dps.pressureAvailable()) {
+
+    dps_pressure->getEvent(&pressure_event);
+
+    dPressure_hPa = pressure_event.pressure;
+
+    if (g_nOpsMode != OPS_STATIC_TEST) {
+
+      dAlt_ft = dps.readAltitude() * 3.28084;
+
     }
     else {
       
@@ -509,47 +575,78 @@ void sampleTempAndPressure()
        *     Values clamped at finish to last value.
        */
 
-#define MINtoMS (x) (x * 60 * 1000)
-
-      struct _vals {
-        int time_ms;
-        int alt_ft;
-      };
-
-      struct _vals *p, *prev;
-
+    struct _vals {
+      float time_ms;
       int alt_ft;
-      
-      struct _vals table[7] = {
-        { MINtoMS(0), 600 },
-        { MINtoMS(2), 600 },
-        { MINtoMS(12), 6500 },
-        { MINtoMS(13), 6500 },
-        { MINtoMS(14), 3500 },
-        { MINtoMS(17), 600 },
-        { MINtoMS(19), 600 }
-       };
+    };
 
-       int t = millis();
+    struct _vals *p, *prev;
+    
+    /*
+     * time and altitude readings for a idealized hop-n-pop
+     */
+    static struct _vals table[7] = {
+      { MINtoMS(0),   600 },
+      { MINtoMS(2),   600 },
+      { MINtoMS(12), 6500 },
+      { MINtoMS(13), 6500 },
+      { MINtoMS(13.5), 3500 },
+      { MINtoMS(16.5),  600 },
+      { MINtoMS(19),    600 }
+    };
 
-       if (t >= MINtoMS(19) || t == 0 ) {
-        alt_ft = 600;
-       }
-       else {
-        *p = table[0];
-        for (i=1; i<7; ++i) {
-          *prev = p;
-          *p = table[i];
+    static int tableSize = sizeof(table)/sizeof(struct _vals);
 
+     int t = millis();
+
+     if (t >= table[tableSize-1].time_ms || t <= table[0].time_ms ) {
+      dAlt_ft = 600.0;
+     }
+     else {
+        int i;
+        p = &table[0];
+        for (i=1; i<tableSize-1; ++i) {
+          prev = p;
+          p = &table[i];
+  
           if (t < p->time_ms) {
-            alt_ft =  prev->alt_ft + (t - prev->time_ms) * (p->alt_ft - prev->alt_ft) / (p->time_ms - prev->time_ms);
+            dAlt_ft =  prev->alt_ft + (t - prev->time_ms) * (p->alt_ft - prev->alt_ft) / (p->time_ms - prev->time_ms);
             break;
           }
         }
-      }
+     }
+
+      //g_atm.SetConditions( dAlt_ft, 0.0 );
+
+      pressure_event.pressure = 1000.0; //TODO hPA pressure
+    }
+
+    /*
+     * Update based on estimated altitude
+     */
+
+    updateHDot(dAlt_ft);
+    
+    if (nAppState != STATE_WAIT) {
+        
+      logFile.print("$PENV,");
+      logFile.print(millis());
+      logFile.print(",");
+      logFile.print(pressure_event.pressure);
+      logFile.print(",");
+      logFile.print( dAlt_ft );
+      logFile.print(",");
+      logFile.println(measuredBattery_volts);
+    
+    }
+    else {
+      // When we're in WAIT mode, we can use the altitude
+      // to set ground altitude.
+      nHGround_feet = dAlt_ft;
     }
   }
 }
+
 
 void setup() {
 
@@ -574,7 +671,7 @@ void setup() {
 
   Serial.println(APP_STRING);
   
-  GPS.begin(0x42);
+  GPS.begin(GPS_I2C_ADDR);
 
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGAGSA);
 
@@ -606,11 +703,11 @@ void setup() {
 
   delay(500);
 
-  Wire.setClock( 400000 );
+  //Wire.setClock( 400000 );
 
   Serial.println("Initialize peripheral ICs");
 
-  if (mpu.begin(MPU6050_I2CADDR_DEFAULT, &Wire, 1 )) {
+  if (mpu.begin(MPU6050_I2C_ADDR, &Wire, 1 )) {
     Serial.println("MPU6050 present");
 
     mpu6050Present = true;
@@ -626,11 +723,13 @@ void setup() {
 
   delay(500);
 
-  if (! dps.begin_I2C(DPS310_I2CADDR_DEFAULT, &Wire)) {
+  if (! dps.begin_I2C(DPS310_I2C_ADDR, &Wire)) {
     Serial.println("Failed to find DPS310 chip");
     while (1) yield();
   }
   Serial.println("DPS310 present");
+
+  delay(500);
 
   dps.configurePressure(DPS310_16HZ, DPS310_16SAMPLES);
   dps.configureTemperature(DPS310_16HZ, DPS310_16SAMPLES);
@@ -759,14 +858,14 @@ void loop() {
    * GPS NMEA processing loop.
    */
 
-  if (nOpsMode == OPS_GROUND_TEST) {
+ if (g_nOpsMode == OPS_GROUND_TEST) {
     updateTestStateMachine();
   }
   else {
-    updateStateMachine();
+    updateFlightStateMachine();
   }
 
-  sampleTempAndPressure();
+  sampleAndLogAltitude();
   
 
 
