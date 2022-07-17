@@ -57,7 +57,7 @@ Adafruit_USBD_MSC usb_msc;
 #define OPS_STATIC_TEST   1  // for testing; time based simulation of vertical motion
 #define OPS_GROUND_TEST   2  // for testing; uses GPS horizontal movement as an analogue to altitude changes
 
-#define OPS_MODE OPS_STATIC_TEST
+#define OPS_MODE OPS_FLIGHT
 
 #if (OPS_MODE == OPS_STATIC_TEST) 
 //#include "1976AtmosphericModel.h"
@@ -339,9 +339,7 @@ void updateTestStateMachine() {
 
   /**
    * State machine appropriate for ground testing
-   * TODO: support flight operating mode, OPS_FLIGHT
    */
-
   switch (nAppState) {
 
   case STATE_WAIT:
@@ -1163,13 +1161,15 @@ void IMU() {
     
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
-  
+
+#ifdef notdef
     Serial.print(g.gyro.x); // rad per sec
     Serial.print(",");
     Serial.print(g.gyro.y);
     Serial.print(",");
     Serial.print(g.gyro.z);
     Serial.println();
+#endif
   
     if (logFile) {
       logFile.print("$PIMU,");
