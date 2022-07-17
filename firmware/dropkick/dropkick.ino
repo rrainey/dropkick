@@ -1,6 +1,6 @@
 /* 
  * This file is part of the Kick distribution (https://github.com/rrainey/sidekick
- * Copyright (c) 2021 Riley Rainey
+ * Copyright (c) 2022 Riley Rainey
  * 
  * This program is free software: you can redistribute it and/or modify  
  * it under the terms of the GNU General Public License as published by  
@@ -23,6 +23,14 @@
 #include <SPI.h>
 #include <SDPlus.h>
 #include <Adafruit_TinyUSB.h>
+
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
+
+SFE_UBLOX_GNSS myGNSS;
+
+#include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
+char nmeaBuffer[100];
+MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
 Adafruit_USBD_MSC usb_msc;
 
@@ -207,7 +215,7 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 #define GREEN_SD_LED   8
 #define SD_CHIP_SELECT 4
 
-Adafruit_GPS GPS(&Wire);
+//Adafruit_GPS GPS(&Wire);
 
 File logFile;
 
@@ -337,7 +345,7 @@ void updateTestStateMachine() {
   switch (nAppState) {
 
   case STATE_WAIT:
-    if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+    if (nmea.isValid() && nmea.getSpeed() >= TEST_SPEED_THRESHOLD_KTS*1000) {
 
       Serial.println("Switching to STATE_IN_FLIGHT");
       
@@ -368,7 +376,7 @@ void updateTestStateMachine() {
   case STATE_IN_FLIGHT:
     {
 
-      if (GPS.speed < TEST_SPEED_THRESHOLD_KTS) {
+      if (nmea.isValid() && nmea.getSpeed() < TEST_SPEED_THRESHOLD_KTS*1000) {
         Serial.println("Switching to STATE_LANDED_1");
         nAppState = STATE_LANDED_1;
         timer1_ms = TIMER1_INTERVAL_MS;
@@ -380,14 +388,14 @@ void updateTestStateMachine() {
   case STATE_LANDED_1:
     {
 
-      if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+      if (nmea.isValid() && nmea.getSpeed() >= TEST_SPEED_THRESHOLD_KTS*1000) {
         Serial.println("Switching to STATE_IN_FLIGHT");
         nAppState = STATE_IN_FLIGHT;
         bTimer1Active = false;
       }
       else if (bTimer1Active && timer1_ms <= 0) {
-        GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
-        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
         bTimer4Active = false;
         Serial.println("Switching to STATE_WAIT");
         setBlinkState ( BLINK_STATE_OFF );
@@ -405,13 +413,13 @@ void updateTestStateMachine() {
   case STATE_LANDED_2:
     {
       
-      if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+      if (nmea.isValid() && nmea.getSpeed() >= TEST_SPEED_THRESHOLD_KTS*1000) {
         nAppState = STATE_IN_FLIGHT;
         bTimer1Active = false;
       }
       else if (bTimer1Active && timer1_ms <= 0) {
-        GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
-        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
         bTimer4Active = false;
         setBlinkState ( BLINK_STATE_OFF );
         nAppState = STATE_WAIT;
@@ -483,8 +491,8 @@ void updateFlightStateMachine() {
         bTimer1Active = false;
       }
       else if (bTimer1Active && timer1_ms <= 0) {
-        GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
-        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
         bTimer4Active = false;
         Serial.println("Switching to STATE_WAIT");
         setBlinkState ( BLINK_STATE_OFF );
@@ -508,8 +516,8 @@ void updateFlightStateMachine() {
         bTimer1Active = false;
       }
       else if (bTimer1Active && timer1_ms <= 0) {
-        GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
-        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
         bTimer4Active = false;
         setBlinkState ( BLINK_STATE_OFF );
         nAppState = STATE_WAIT;
@@ -661,7 +669,10 @@ void sampleAndLogAltitude()
      */
 
     updateHDot(dAlt_ft);
-    
+
+    /*
+     * Output a record
+     */
     if (nAppState != STATE_WAIT) {
         
       logFile.print("$PENV,");
@@ -679,6 +690,38 @@ void sampleAndLogAltitude()
       // to set ground altitude.
       nHGround_feet = dAlt_ft;
     }
+  }
+}
+
+/*
+ * This method is called by the Sparkfun u-blox class to process an incoming character
+ */
+
+//This function gets called from the SparkFun u-blox Arduino Library
+//As each NMEA character comes in you can specify what to do with it
+//Useful for passing to other libraries like tinyGPS, MicroNMEA, or even
+//a buffer, radio, etc.
+
+char incomingNMEA[512];
+char *pNMEA = incomingNMEA;
+
+void SFE_UBLOX_GNSS::processNMEA(char incoming)
+{
+  *pNMEA++ = incoming;
+
+  nmea.process(incoming);
+
+  if (incoming == '\n') {
+    if (logFile) {
+      logFile.print( incomingNMEA );
+      flushLog();
+    }
+  
+    if ( printNMEA ) {
+      Serial.print( incomingNMEA );
+    }
+
+    pNMEA = incomingNMEA;
   }
 }
 
@@ -704,9 +747,12 @@ void setup() {
   
   Serial.begin(115200);
 
-  Serial.println(APP_STRING);
-  
-  GPS.begin(GPS_I2C_ADDR);
+  Serial.println( "" );
+
+  Serial.println( APP_STRING );
+
+#ifdef notdef
+  GPS.begin( GPS_I2C_ADDR );
 
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGAGSA);
 
@@ -717,6 +763,7 @@ void setup() {
   GPS.sendCommand(PGCMD_ANTENNA);
 
   delay(1000);
+#endif
 
 /*
 
@@ -724,9 +771,8 @@ void setup() {
     Serial.println("Could not find a valid BME680 sensor, check wiring!");
     while (1);
   }
-*/
-
   delay(500);
+*/
 
   /*
    * Prepare for USB disk interactions and initialize the SD card interface
@@ -747,8 +793,27 @@ void setup() {
   delay(500);
 
   Wire.setClock( 400000 );
+  Wire.begin();
 
   Serial.println("Initialize peripheral ICs");
+
+  pNMEA = incomingNMEA;
+
+  if (myGNSS.begin() == false)
+  {
+    Serial.println(F("u-blox GNSS not detected at default I2C address. Please check wiring. Freezing."));
+    while (1);
+  }
+
+  myGNSS.setI2COutput(COM_TYPE_UBX | COM_TYPE_NMEA); //Set the I2C port to output both NMEA and UBX messages
+  myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
+
+  //This will pipe all NMEA sentences to the serial port so we can see them
+  //myGNSS.setNMEAOutputPort(Serial);
+
+  myGNSS.setNavigationFrequency(1);
+
+  Serial.println("u-blox GNSS present");
 
   if (mpu.begin(MPU6050_I2C_ADDR, &Wire, 1 )) {
     Serial.println("MPU6050 present");
@@ -834,6 +899,16 @@ void setup() {
   }
   
   lastTime_ms = millis();
+
+  /*
+   * Start USB disk operations
+   */
+  uint32_t block_count = SD.getVolume().blocksPerCluster()*SD.getVolume().clusterCount();
+
+  Serial.print("Volume size (MB):  ");
+  Serial.println((block_count/2) / 1024);
+  usb_msc.setCapacity( block_count, 512 );
+  usb_msc.setUnitReady( true );
 }
 
 void loop() {
@@ -873,6 +948,9 @@ void loop() {
 
   }
 
+  myGNSS.checkUblox();
+
+#ifdef notdef
   while ( GPS.available() > 0 ) {
   
     char c = GPS.read();
@@ -905,13 +983,14 @@ void loop() {
     }
 
   }
+#endif
 
   /*
    * Processing tasks below are outside of the
    * GPS NMEA processing loop.
    */
 
- if (OPS_MODE == OPS_GROUND_TEST) {
+  if (OPS_MODE == OPS_GROUND_TEST) {
     updateTestStateMachine();
   }
   else {
@@ -919,8 +998,6 @@ void loop() {
   }
 
   sampleAndLogAltitude();
-  
-
 
   /*
    * RED LED Blink Logic
@@ -951,7 +1028,7 @@ void loop() {
     
     timer2_ms = TIMER2_INTERVAL_MS;
     
-    measuredBattery_volts = analogRead(VBATPIN);
+    measuredBattery_volts = analogRead( VBATPIN );
     measuredBattery_volts *= 2;    // we divided by 2, so multiply back
     measuredBattery_volts *= 3.3;  // Multiply by 3.3V, our reference voltage
     measuredBattery_volts /= 1024; // convert to voltage
