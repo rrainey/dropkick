@@ -2,6 +2,12 @@
 # Dropkick
 **An experimental logger for skydivers**
 
+## Project Status - July 17, 2022
+I have built and have begun testing the u-blox SAM-M8Q variant of the boards.  So far, the reception capabilities are much better than the
+ CAM-M8 variant.  Flight testing will begin in the next few weeks.
+ 
+ ## Description
+
 This is a stand-alone, battery-powered data logger designed to be
 carried by a skydiver during their jump.  It includes a GNSS (GPS) receiver, IMU, and altitude sensors. Data from all sensors is logged onto a Micro-SD card. The logged data can be reviewed post-jump by to-be-designed software.
 
@@ -43,6 +49,9 @@ Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino 
 My prototype circuit boards were fabricated by both OSHPark or PCBgogo. Both are excellent manufacturers for hobbyists.
 
 ## Solder Reflow
+
+The soder reflow process has turned out to be a tricky step in constructing the PCBs, particularly with the SAM-M8Q IC.  Basically it requires extra heat soak in
+  order to properly flow the solder.  Some u-blox instructions are repeated below, but I'll ultimately add some notes about what worked best for me.
 
 The [u-blox Hardware Integration Manual](https://www.u-blox.com/en/docs/UBX-16018358) provides some detailed requirements for soldering the GNSS module to a PCB:
 
