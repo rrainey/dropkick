@@ -1,5 +1,5 @@
 /* 
- * This file is part of the Kick distribution (https://github.com/rrainey/sidekick
+ * This file is part of the Kick distribution (https://github.com/rrainey/dropkick
  * Copyright (c) 2022 Riley Rainey
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -34,9 +34,13 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
 Adafruit_USBD_MSC usb_msc;
 
-#define APP_STRING  "Sidekick, version 0.51"
+#define APP_STRING  "Dropkick, version 0.51"
 #define LOG_VERSION 1
 #define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.51\",51"
+
+/*
+ * I2C peripheral addresses valid for the V2-SAM and V3-SAM PCBs
+ */
 
 #define GPS_I2C_ADDR     0x42
 #define DPS310_I2C_ADDR  0x76
@@ -57,7 +61,7 @@ Adafruit_USBD_MSC usb_msc;
 #define OPS_STATIC_TEST   1  // for testing; time based simulation of vertical motion
 #define OPS_GROUND_TEST   2  // for testing; uses GPS horizontal movement as an analogue to altitude changes
 
-#define OPS_MODE OPS_STATIC_TEST
+#define OPS_MODE OPS_FLIGHT
 
 #if (OPS_MODE == OPS_STATIC_TEST) 
 //#include "1976AtmosphericModel.h"
@@ -66,7 +70,7 @@ Adafruit_USBD_MSC usb_msc;
 
 #endif
 
-#define TEST_SPEED_THRESHOLD_KTS  6.0
+#define TEST_SPEED_THRESHOLD_KTS     6.0
 #define OPS_HDOT_THRESHOLD_FPM       300
 #define OPS_HDOT_LAND_THRESHOLD_FPM  100
 
@@ -706,7 +710,7 @@ void sampleAndLogAltitude()
 //Useful for passing to other libraries like tinyGPS, MicroNMEA, or even
 //a buffer, radio, etc.
 
-char incomingNMEA[512];
+char incomingNMEA[256];
 char *pNMEA = incomingNMEA;
 bool bStartOfNMEA = true;
 
@@ -936,6 +940,18 @@ void setup() {
   Serial.println((block_count/2) / 1024);
   usb_msc.setCapacity( block_count, 512 );
   usb_msc.setUnitReady( true );
+
+
+  /*
+   * setup complete
+   */
+  digitalWrite(RED_LED, HIGH);
+  delay(500);
+  digitalWrite(RED_LED, LOW);
+  delay(500);
+  digitalWrite(RED_LED, HIGH);
+  delay(500);
+  digitalWrite(RED_LED, LOW);
 }
 
 void loop() {
