@@ -86,16 +86,17 @@ Adafruit_USBD_MSC usb_msc;
  * Log file contains GPS NMEA CSV records along with extra sensor data records in quasi-NMEA format
  * 
  * State 0: WAIT - gather baseline surface elevation information; compute HDOT_fps
+ *                 GNSS update rate @ 1Hz
  * 
  * State 1: IN_FLIGHT (enter this state when HDOT_fpm indicates >= 300 fpm climb), 
- *                   enable GPS (future versions), compute HDOT_fps, start logging if not already)
+ *                   GNSS update rate @ 1Hz, compute HDOT_fps, start logging if not already)
  *
  * State 2: JUMPING (enter this state whenever HDOT_FPM < -800 fpm)
- *                  enable GPS (future versions), compute HDOT_fps, start logging if not already)
+ *                  GNSS update rate increases to 2Hz, compute HDOT_fps, start logging if not already)
  *                   
  *                   
  * State 3: LANDED1  like state 2 - if any conditions are vioated, return to state 2(JUMPING), 
- *                   go to state 0 when timer 1 reaches 60 seconds, disable GPS (future versions), close logfile
+ *                   go to state 0 when timer 1 reaches 60 seconds, set GNSS update rate set to 1Hz, close logfile
  *                   log data otherwise
  */
 
@@ -488,6 +489,9 @@ void updateFlightStateMachine() {
       if (nHDot_fpm <= OPS_HDOT_JUMPING_FPM) {
         Serial.println("Switching to STATE_JUMPING");
         nAppState = STATE_JUMPING;
+
+        // set nav update rate to 2Hz
+        myGNSS.setNavigationFrequency(2);
       }
     }
     break;
@@ -518,6 +522,10 @@ void updateFlightStateMachine() {
       else if (bTimer1Active && timer1_ms <= 0) {
         //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
         //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+
+        // Back to 1Hz update rate
+        myGNSS.setNavigationFrequency(1);
+        
         bTimer4Active = false;
         Serial.println("Switching to STATE_WAIT");
         setBlinkState ( BLINK_STATE_OFF );
