@@ -34,9 +34,9 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
 Adafruit_USBD_MSC usb_msc;
 
-#define APP_STRING  "Dropkick, version 0.51"
+#define APP_STRING  "Dropkick, version 0.52"
 #define LOG_VERSION 1
-#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.51\",51"
+#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.52\",52"
 
 /*
  * I2C peripheral addresses valid for the V2-SAM and V3-SAM PCBs
@@ -73,6 +73,7 @@ Adafruit_USBD_MSC usb_msc;
 #define TEST_SPEED_THRESHOLD_KTS     6.0
 #define OPS_HDOT_THRESHOLD_FPM       300
 #define OPS_HDOT_LAND_THRESHOLD_FPM  100
+#define OPS_HDOT_JUMPING_FPM         -800
 
 /*
  * Minutes to milliseconds
@@ -86,20 +87,23 @@ Adafruit_USBD_MSC usb_msc;
  * 
  * State 0: WAIT - gather baseline surface elevation information; compute HDOT_fps
  * 
- * State 1: IN_FLIGHT (enter this state when HDOT_fpm indicates >= 200 fpm climb), 
+ * State 1: IN_FLIGHT (enter this state when HDOT_fpm indicates >= 300 fpm climb), 
  *                   enable GPS (future versions), compute HDOT_fps, start logging if not already)
+ *
+ * State 2: JUMPING (enter this state whenever HDOT_FPM < -800 fpm)
+ *                  enable GPS (future versions), compute HDOT_fps, start logging if not already)
  *                   
- * State 2: LANDED1 (enter when altitude is within 1000 feet of baseline ground alt and 
- *                   HDOT_fpm < 50 fpm, start timer 1, log data)
  *                   
- * State 3: LANDED2  like state 2 - if any conditions are vioated, return to state 1(IN_FLIGHT), 
- *                   go to state 0 when timer 1 reaches 60 seconds, disable GPS (future versions), log data otherwise
+ * State 3: LANDED1  like state 2 - if any conditions are vioated, return to state 2(JUMPING), 
+ *                   go to state 0 when timer 1 reaches 60 seconds, disable GPS (future versions), close logfile
+ *                   log data otherwise
  */
 
 #define STATE_WAIT       0
 #define STATE_IN_FLIGHT  1
-#define STATE_LANDED_1   2
-#define STATE_LANDED_2   3
+#define STATE_JUMPING    2
+#define STATE_LANDED_1   3
+#define STATE_LANDED_2   4
 
 int nAppState;
 
@@ -481,6 +485,15 @@ void updateFlightStateMachine() {
 
   case STATE_IN_FLIGHT:
     {
+      if (nHDot_fpm <= OPS_HDOT_JUMPING_FPM) {
+        Serial.println("Switching to STATE_JUMPING");
+        nAppState = STATE_JUMPING;
+      }
+    }
+    break;
+
+  case STATE_JUMPING:
+    {
       if (labs(nHDot_fpm) <= OPS_HDOT_LAND_THRESHOLD_FPM) {
         Serial.println("Switching to STATE_LANDED_1");
         nAppState = STATE_LANDED_1;
@@ -492,8 +505,12 @@ void updateFlightStateMachine() {
 
   case STATE_LANDED_1:
     {
-
-      if (labs(nHDot_fpm) >= OPS_HDOT_THRESHOLD_FPM) {
+      if (nHDot_fpm <= OPS_HDOT_JUMPING_FPM) {
+        Serial.println("Switching to STATE_JUMPING");
+        nAppState = STATE_JUMPING;
+        bTimer1Active = false;
+      }
+      else if (labs(nHDot_fpm) >= OPS_HDOT_THRESHOLD_FPM) {
         Serial.println("Switching to STATE_IN_FLIGHT");
         nAppState = STATE_IN_FLIGHT;
         bTimer1Active = false;
@@ -506,32 +523,6 @@ void updateFlightStateMachine() {
         setBlinkState ( BLINK_STATE_OFF );
         nAppState = STATE_WAIT;
         bTimer1Active = false;
-
-        stopLogFileFlushing();
-        logFile.close();
-        
-      }
-      
-    }
-    break;
-
-  case STATE_LANDED_2:
-    {
-      
-      if (labs(nHDot_fpm) >= OPS_HDOT_THRESHOLD_FPM) {
-        nAppState = STATE_IN_FLIGHT;
-        Serial.println("Switching to STATE_IN_FLIGHT");
-        bTimer1Active = false;
-      }
-      else if (bTimer1Active && timer1_ms <= 0) {
-        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
-        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
-        bTimer4Active = false;
-        setBlinkState ( BLINK_STATE_OFF );
-        nAppState = STATE_WAIT;
-        Serial.println("Switching to STATE_WAIT");
-        bTimer1Active = false;
-        bTimer5Active = false;
 
         stopLogFileFlushing();
         logFile.close();
