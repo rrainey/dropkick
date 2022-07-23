@@ -34,9 +34,9 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
 Adafruit_USBD_MSC usb_msc;
 
-#define APP_STRING  "Sidekick, version 0.50"
+#define APP_STRING  "Sidekick, version 0.51"
 #define LOG_VERSION 1
-#define NMEA_APP_STRING "$PVER,\"Sidekick, version 0.50\",50"
+#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.51\",51"
 
 #define GPS_I2C_ADDR     0x42
 #define DPS310_I2C_ADDR  0x76
@@ -57,7 +57,7 @@ Adafruit_USBD_MSC usb_msc;
 #define OPS_STATIC_TEST   1  // for testing; time based simulation of vertical motion
 #define OPS_GROUND_TEST   2  // for testing; uses GPS horizontal movement as an analogue to altitude changes
 
-#define OPS_MODE OPS_FLIGHT
+#define OPS_MODE OPS_STATIC_TEST
 
 #if (OPS_MODE == OPS_STATIC_TEST) 
 //#include "1976AtmosphericModel.h"
@@ -226,6 +226,12 @@ char logpath[32];
  * the main loop.
  */
 uint32_t lastTime_ms = 0;
+
+/*
+ * Records last millis() time for start of NMEA sentence arrival. 
+ * Useful to sync millis() time with GPS clock.
+ */
+uint32_t lastNMEATime_ms = 0;
 
 /*
  * Set up timers
@@ -702,9 +708,17 @@ void sampleAndLogAltitude()
 
 char incomingNMEA[512];
 char *pNMEA = incomingNMEA;
+bool bStartOfNMEA = true;
 
 void SFE_UBLOX_GNSS::processNMEA(char incoming)
 {
+  /*
+   * New sentence arriving? record the time
+   */
+  if (bStartOfNMEA) {
+    lastNMEATime_ms = millis();
+    bStartOfNMEA = false;
+  }
   *pNMEA++ = incoming;
 
   nmea.process(incoming);
@@ -714,7 +728,18 @@ void SFE_UBLOX_GNSS::processNMEA(char incoming)
     *pNMEA++ = '\0';
     
     if (logFile) {
+      
       logFile.print( incomingNMEA );
+
+      /*
+       * Include time hack for important GNSS messages.  This is
+       * designed to allow us to correlate GPS time and millis() time in the output stream.
+       */
+      if (strncmp( incomingNMEA+3, "GGA", 3) == 0 || strncmp( incomingNMEA+3, "GLL", 3) == 0) {
+        logFile.print( "$PTH," );
+        logFile.println( lastNMEATime_ms );
+      }
+      
       flushLog();
     }
   
@@ -723,6 +748,7 @@ void SFE_UBLOX_GNSS::processNMEA(char incoming)
     }
 
     pNMEA = incomingNMEA;
+    bStartOfNMEA = true;
   }
 }
 
