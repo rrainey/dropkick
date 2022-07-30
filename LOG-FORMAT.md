@@ -33,9 +33,9 @@ PIMU record logs sensor information from the MPU6050 IMU IC.
 |---------------|----------------------------------------|
 | $PIMU         | Record identifier                      |
 | millis() timestamp | Time of sample in milliseconds    |
-| X-accel       | expressed in meters per second         |
-| Y-accel       | expressed in meters per second         |
-| Z-accel       | expressed in meters per second         |
+| X-accel       | expressed in meters per second squared          |
+| Y-accel       | expressed in meters per second squared          |
+| Z-accel       | expressed in meters per second  squared       |
 | X-rate       | raw X rotation rate; expressed in radians per second         |
 | Y-rate       | raw Y rotation rate; expressed in radians per second         |
 | Z-rate       | raw Z rotation rate; expressed in radians per second         |
