@@ -88,5 +88,6 @@ Sensor records are written to the file at these rates:
 |  GNSS position report            |       2 Hz |
 |  PIMU            |      40 Hz |
 |  PENV            |       4 Hz    |
+|  PTH             | follows each GGA and VTG record|
 
 Valid for version 52 of the Dropkick firmware.
