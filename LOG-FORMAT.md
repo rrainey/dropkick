@@ -32,7 +32,7 @@ A single instance of this record appears at the start of a log.  It documents
 ## $PIMU Record
 
 PIMU record logs sensor information from the [MPU6050 IMU IC](https://invensense.tdk.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf).  The MPU6050 is mounted on the
-Dropkick PCB such that the postive X-Axis projects out the face opposite the USB port, the positive Y-Axis projects out face corresponding to the SD card slot, and the positive Z-Axis projects out the "top" of the enclosure.  Since the device might be carried by a skydiver in almost any orientation, it would be up to analysis software to discern the body orientation inferred by actual readings.
+Dropkick PCB such that the postive X-Axis projects out the SD card slot, the positive Y-Axis projects out the face opposite the USB port, and the positive Z-Axis projects out the "top" of the enclosure.  Since the device might be carried by a skydiver in almost any orientation, it would be up to analysis software to discern the body orientation inferred by actual readings.
 
 ### Comma-separated Fields
 
