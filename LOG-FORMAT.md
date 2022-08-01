@@ -47,6 +47,8 @@ Dropkick PCB such that the postive X-Axis projects out the SD card slot, the pos
 | Y-rate       | raw Y rotation rate; expressed in radians per second         |
 | Z-rate       | raw Z rotation rate; expressed in radians per second         |
 
+![](images/imu-axes.png)
+
 ### $PIMU Example
 `$PIMU,13925127,7.01,5.31,0.49,-0.00,0.01,0.11`
 
