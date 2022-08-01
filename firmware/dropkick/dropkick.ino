@@ -1,6 +1,6 @@
 /* 
- * This file is part of the Kick distribution (https://github.com/rrainey/sidekick
- * Copyright (c) 2021 Riley Rainey
+ * This file is part of the Kick distribution (https://github.com/rrainey/dropkick
+ * Copyright (c) 2022 Riley Rainey
  * 
  * This program is free software: you can redistribute it and/or modify  
  * it under the terms of the GNU General Public License as published by  
@@ -21,11 +21,30 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_GPS.h>
 #include <SPI.h>
-#include <SD.h>
+#include <SDPlus.h>
+#include <Adafruit_TinyUSB.h>
 
-#define APP_STRING  "Sidekick, version 0.20"
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
+
+SFE_UBLOX_GNSS myGNSS;
+
+#include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
+char nmeaBuffer[100];
+MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
+
+Adafruit_USBD_MSC usb_msc;
+
+#define APP_STRING  "Dropkick, version 0.52"
 #define LOG_VERSION 1
-#define NMEA_APP_STRING "$PVER,\"Sidekick, version 0.20\",20"
+#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.52\",52"
+
+/*
+ * I2C peripheral addresses valid for the V2-SAM and V3-SAM PCBs
+ */
+
+#define GPS_I2C_ADDR     0x42
+#define DPS310_I2C_ADDR  0x76
+#define MPU6050_I2C_ADDR 0x69
 
 /**
  * Fatal error codes (to be implemented)
@@ -38,12 +57,28 @@
 /*
  * Operating mode
  */
-#define OPS_FLIGHT       0 // normal mode (NOT YET IMPLEMENTED)
-#define OPS_GROUND_TEST  1 // for testing; uses horizontal movement as an analogue to altitude changes
+#define OPS_FLIGHT        0 // normal mode; altimeter used to detect motion
+#define OPS_STATIC_TEST   1  // for testing; time based simulation of vertical motion
+#define OPS_GROUND_TEST   2  // for testing; uses GPS horizontal movement as an analogue to altitude changes
 
-int nOpMode = OPS_GROUND_TEST;
+#define OPS_MODE OPS_FLIGHT
 
-#define TEST_SPEED_THRESHOLD_KTS  6.0
+#if (OPS_MODE == OPS_STATIC_TEST) 
+//#include "1976AtmosphericModel.h"
+
+//sim1976AtmosphericModel g_atm;
+
+#endif
+
+#define TEST_SPEED_THRESHOLD_KTS     6.0
+#define OPS_HDOT_THRESHOLD_FPM       300
+#define OPS_HDOT_LAND_THRESHOLD_FPM  100
+#define OPS_HDOT_JUMPING_FPM         -800
+
+/*
+ * Minutes to milliseconds
+ */
+#define MINtoMS(x) ((x) * 60 * 1000)
 
 /*
  * Automatic jump logging
@@ -51,21 +86,25 @@ int nOpMode = OPS_GROUND_TEST;
  * Log file contains GPS NMEA CSV records along with extra sensor data records in quasi-NMEA format
  * 
  * State 0: WAIT - gather baseline surface elevation information; compute HDOT_fps
+ *                 GNSS update rate @ 1Hz
  * 
- * State 1: IN_FLIGHT (enter this state when HDOT_fpm indicates >= 200 fpm climb), 
- *                   enable GPS (future versions), compute HDOT_fps, start logging if not already)
+ * State 1: IN_FLIGHT (enter this state when HDOT_fpm indicates >= 300 fpm climb), 
+ *                   GNSS update rate @ 1Hz, compute HDOT_fps, start logging if not already)
+ *
+ * State 2: JUMPING (enter this state whenever HDOT_FPM < -800 fpm)
+ *                  GNSS update rate increases to 2Hz, compute HDOT_fps, start logging if not already)
  *                   
- * State 2: LANDED1 (enter when altitude is within 1000 feet of baseline ground alt and 
- *                   HDOT_fpm < 50 fpm, start timer 1, log data)
  *                   
- * State 3: LANDED2  like state 2 - if any conditions are vioated, return to state 1(IN_FLIGHT), 
- *                   go to state 0 when timer 1 reaches 60 seconds, disable GPS (future versions), log data otherwise
+ * State 3: LANDED1  like state 2 - if any conditions are vioated, return to state 2(JUMPING), 
+ *                   go to state 0 when timer 1 reaches 60 seconds, set GNSS update rate set to 1Hz, close logfile
+ *                   log data otherwise
  */
 
 #define STATE_WAIT       0
 #define STATE_IN_FLIGHT  1
-#define STATE_LANDED_1   2
-#define STATE_LANDED_2   3
+#define STATE_JUMPING    2
+#define STATE_LANDED_1   3
+#define STATE_LANDED_2   4
 
 int nAppState;
 
@@ -89,16 +128,73 @@ float measuredBattery_volts;
 int nH_feet = 0;
 
 /*
- * Estimated rate of climb (fps)
+ * Estimated rate of climb (fpm)
  */
-int nHDOT_fps = 0;
-
+int nHDot_fpm = 0;
 /*
  * Estimated ground elevation, ft
  * 
  * Computed while in WAIT state.
  */
 int nHGround_feet = 0;
+
+#define NUM_H_SAMPLES 5
+int nHSample[NUM_H_SAMPLES];
+int nHDotSample[NUM_H_SAMPLES];
+int nNextHSample = 0;
+uint32_t ulLastHSampleMillis;
+
+boolean bFirstPressureSample = true;
+
+/**
+ * Currently unused.
+ */
+int computAvgHDot() {
+  int i;
+  int sum;
+  for(i=0; i<NUM_H_SAMPLES; ++i) {
+    sum += nHDotSample[i];
+  }
+  return sum / 5;
+}
+
+/**
+ * Use pressure altitude samples to estimate rate of climb.
+ * 
+ * Rate of climb is re-estimated every 10 seconds.
+ */
+void updateHDot(float H_feet) {
+
+  uint32_t ulMillis = millis();
+  int nLastHSample_feet;
+  int nInterval_ms =  ulMillis - ulLastHSampleMillis;
+
+  /* update HDot every ten seconds */
+  if (nInterval_ms > 10000) {
+    if (!bFirstPressureSample) {
+      if (nNextHSample == 0) {
+        nLastHSample_feet = nHSample[NUM_H_SAMPLES-1];
+      }
+      else {
+        nLastHSample_feet = nHSample[nNextHSample-1];
+      }
+      nHSample[nNextHSample] = H_feet;
+      nHDotSample[nNextHSample] = (((long) H_feet - nLastHSample_feet) * 60000L) / nInterval_ms;
+      nHDot_fpm = nHDotSample[nNextHSample];
+    }
+    else {
+      bFirstPressureSample = false;
+      nHSample[nNextHSample] = H_feet;
+      nHDotSample[nNextHSample] = 0;
+      nHDot_fpm = 0;
+    }
+
+    ulLastHSampleMillis = ulMillis;
+    if (++nNextHSample >= NUM_H_SAMPLES) {
+      nNextHSample = 0;
+    }
+  }
+}
 
 /*
  * I2C connection to the BME688 pressure/temp sensor
@@ -128,7 +224,7 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 #define GREEN_SD_LED   8
 #define SD_CHIP_SELECT 4
 
-Adafruit_GPS GPS(&Wire);
+//Adafruit_GPS GPS(&Wire);
 
 File logFile;
 
@@ -139,6 +235,12 @@ char logpath[32];
  * the main loop.
  */
 uint32_t lastTime_ms = 0;
+
+/*
+ * Records last millis() time for start of NMEA sentence arrival. 
+ * Useful to sync millis() time with GPS clock.
+ */
+uint32_t lastNMEATime_ms = 0;
 
 /*
  * Set up timers
@@ -252,13 +354,11 @@ void updateTestStateMachine() {
 
   /**
    * State machine appropriate for ground testing
-   * TODO: support flight operating mode, OPS_FLIGHT
    */
-
   switch (nAppState) {
 
   case STATE_WAIT:
-    if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+    if (nmea.isValid() && nmea.getSpeed() >= TEST_SPEED_THRESHOLD_KTS*1000) {
 
       Serial.println("Switching to STATE_IN_FLIGHT");
       
@@ -289,7 +389,7 @@ void updateTestStateMachine() {
   case STATE_IN_FLIGHT:
     {
 
-      if (GPS.speed < TEST_SPEED_THRESHOLD_KTS) {
+      if (nmea.isValid() && nmea.getSpeed() < TEST_SPEED_THRESHOLD_KTS*1000) {
         Serial.println("Switching to STATE_LANDED_1");
         nAppState = STATE_LANDED_1;
         timer1_ms = TIMER1_INTERVAL_MS;
@@ -301,14 +401,14 @@ void updateTestStateMachine() {
   case STATE_LANDED_1:
     {
 
-      if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+      if (nmea.isValid() && nmea.getSpeed() >= TEST_SPEED_THRESHOLD_KTS*1000) {
         Serial.println("Switching to STATE_IN_FLIGHT");
         nAppState = STATE_IN_FLIGHT;
         bTimer1Active = false;
       }
       else if (bTimer1Active && timer1_ms <= 0) {
-        GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
-        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
         bTimer4Active = false;
         Serial.println("Switching to STATE_WAIT");
         setBlinkState ( BLINK_STATE_OFF );
@@ -326,13 +426,13 @@ void updateTestStateMachine() {
   case STATE_LANDED_2:
     {
       
-      if (GPS.speed >= TEST_SPEED_THRESHOLD_KTS) {
+      if (nmea.isValid() && nmea.getSpeed() >= TEST_SPEED_THRESHOLD_KTS*1000) {
         nAppState = STATE_IN_FLIGHT;
         bTimer1Active = false;
       }
       else if (bTimer1Active && timer1_ms <= 0) {
-        GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
-        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
         bTimer4Active = false;
         setBlinkState ( BLINK_STATE_OFF );
         nAppState = STATE_WAIT;
@@ -348,6 +448,314 @@ void updateTestStateMachine() {
   }
 }
 
+void updateFlightStateMachine() {
+
+  /**
+   * State machine appropriate for flight
+   */
+  switch (nAppState) {
+
+  case STATE_WAIT:
+    if (nHDot_fpm > OPS_HDOT_THRESHOLD_FPM) {
+
+      Serial.println("Switching to STATE_IN_FLIGHT");
+      
+      // open log file
+      generateLogname( logpath );
+      logFile = SD.open( logpath, FILE_WRITE );
+
+      logFile.println( NMEA_APP_STRING );
+
+      // log data; jump to 5HZ logging
+      //GPS.sendCommand(PMTK_API_SET_FIX_CTL_5HZ);
+      //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ);
+
+      // Activate altitude / battery sensor logging
+      bTimer4Active = true;
+      timer4_ms = TIMER4_INTERVAL_MS;
+
+      // Activate periodic log file flushing
+      startLogFileFlushing();
+
+      // Activate "in flight" LED blinking
+      setBlinkState ( BLINK_STATE_LOGGING );
+      
+      nAppState = STATE_IN_FLIGHT;
+    }
+    break;
+
+  case STATE_IN_FLIGHT:
+    {
+      if (nHDot_fpm <= OPS_HDOT_JUMPING_FPM) {
+        Serial.println("Switching to STATE_JUMPING");
+        nAppState = STATE_JUMPING;
+
+        // set nav update rate to 2Hz
+        myGNSS.setNavigationFrequency(2);
+      }
+    }
+    break;
+
+  case STATE_JUMPING:
+    {
+      if (labs(nHDot_fpm) <= OPS_HDOT_LAND_THRESHOLD_FPM) {
+        Serial.println("Switching to STATE_LANDED_1");
+        nAppState = STATE_LANDED_1;
+        timer1_ms = TIMER1_INTERVAL_MS;
+        bTimer1Active = true;
+      }
+    }
+    break;
+
+  case STATE_LANDED_1:
+    {
+      if (nHDot_fpm <= OPS_HDOT_JUMPING_FPM) {
+        Serial.println("Switching to STATE_JUMPING");
+        nAppState = STATE_JUMPING;
+        bTimer1Active = false;
+      }
+      else if (labs(nHDot_fpm) >= OPS_HDOT_THRESHOLD_FPM) {
+        Serial.println("Switching to STATE_IN_FLIGHT");
+        nAppState = STATE_IN_FLIGHT;
+        bTimer1Active = false;
+      }
+      else if (bTimer1Active && timer1_ms <= 0) {
+        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+
+        // Back to 1Hz update rate
+        myGNSS.setNavigationFrequency(1);
+        
+        bTimer4Active = false;
+        Serial.println("Switching to STATE_WAIT");
+        setBlinkState ( BLINK_STATE_OFF );
+        nAppState = STATE_WAIT;
+        bTimer1Active = false;
+
+        stopLogFileFlushing();
+        logFile.close();
+      }
+    }
+    break;
+  }
+}
+
+/*
+ * Start of USB Disk callbacks
+ */
+
+// Callback invoked when received READ10 command.
+// Copy disk's data to buffer (up to bufsize) and
+// return number of copied bytes (must be multiple of block size)
+int32_t msc_read_cb (uint32_t lba, void* buffer, uint32_t bufsize)
+{
+  (void) bufsize;
+  return SD.getCard().readBlock(lba, (uint8_t*) buffer) ? 512 : -1;
+}
+
+// Callback invoked when received WRITE10 command.
+// Process data in buffer to disk's storage and 
+// return number of written bytes (must be multiple of block size)
+int32_t msc_write_cb (uint32_t lba, uint8_t* buffer, uint32_t bufsize)
+{
+  (void) bufsize;
+  return SD.getCard().writeBlock(lba, buffer) ? 512 : -1;
+}
+
+// Callback invoked when WRITE10 command is completed (status received and accepted by host).
+// used to flush any pending cache.
+void msc_flush_cb (void)
+{
+  // nothing to do
+}
+
+
+/*
+ * End of USB Disk callbacks
+ */
+
+void sampleAndLogAltitude()
+{
+
+  double dAlt_ft;
+  float dPressure_hPa;
+    
+  sensors_event_t temp_event, pressure_event;
+
+  if (dps.temperatureAvailable()) {
+    dps_temp->getEvent(&temp_event);
+    
+    /*
+    Serial.print(F("Temperature = "));
+    Serial.print(temp_event.temperature);
+    Serial.println(" *C");
+    Serial.println();
+    */
+    
+  }
+
+  /*
+   * Note: sampling pressure in dps also samples temperature.
+   */
+  if (dps.pressureAvailable()) {
+
+    dps_pressure->getEvent(&pressure_event);
+
+    dPressure_hPa = pressure_event.pressure;
+
+    if (OPS_MODE != OPS_STATIC_TEST) {
+
+      dAlt_ft = dps.readAltitude() * 3.28084;
+
+    }
+    else {
+      
+      /*
+       * Simulate interpolated altitude based on this schedule:
+       * 
+       * Time (min)     Alt(ft)
+       *     0             600
+       *     2             600
+       *     12           6500
+       *     13           6500
+       *     14           3500
+       *     17            600
+       *     19            600 
+       *     
+       *     Values clamped at finish to last value.
+       */
+
+    struct _vals {
+      float time_ms;
+      int alt_ft;
+    };
+
+    struct _vals *p, *prev;
+    
+    /*
+     * time and altitude readings for a idealized hop-n-pop
+     */
+    static struct _vals table[7] = {
+      { MINtoMS(0),   600 },
+      { MINtoMS(2),   600 },
+      { MINtoMS(12), 6500 },
+      { MINtoMS(13), 6500 },
+      { MINtoMS(13.5), 3500 },
+      { MINtoMS(16.5),  600 },
+      { MINtoMS(19),    600 }
+    };
+
+    static int tableSize = sizeof(table)/sizeof(struct _vals);
+
+     int t = millis();
+
+     if (t >= table[tableSize-1].time_ms || t <= table[0].time_ms ) {
+      dAlt_ft = 600.0;
+     }
+     else {
+        int i;
+        p = &table[0];
+        for (i=1; i<tableSize-1; ++i) {
+          prev = p;
+          p = &table[i];
+  
+          if (t < p->time_ms) {
+            dAlt_ft =  prev->alt_ft + (t - prev->time_ms) * (p->alt_ft - prev->alt_ft) / (p->time_ms - prev->time_ms);
+            break;
+          }
+        }
+     }
+
+      //g_atm.SetConditions( dAlt_ft, 0.0 );
+
+      pressure_event.pressure = 1000.0; //TODO hPA pressure
+    }
+
+    /*
+     * Update based on estimated altitude
+     */
+
+    updateHDot(dAlt_ft);
+
+    /*
+     * Output a record
+     */
+    if (nAppState != STATE_WAIT) {
+        
+      logFile.print("$PENV,");
+      logFile.print(millis());
+      logFile.print(",");
+      logFile.print(pressure_event.pressure);
+      logFile.print(",");
+      logFile.print( dAlt_ft );
+      logFile.print(",");
+      logFile.println(measuredBattery_volts);
+    
+    }
+    else {
+      // When we're in WAIT mode, we can use the altitude
+      // to set ground altitude.
+      nHGround_feet = dAlt_ft;
+    }
+  }
+}
+
+/*
+ * This method is called by the Sparkfun u-blox class to process an incoming character
+ */
+
+//This function gets called from the SparkFun u-blox Arduino Library
+//As each NMEA character comes in you can specify what to do with it
+//Useful for passing to other libraries like tinyGPS, MicroNMEA, or even
+//a buffer, radio, etc.
+
+char incomingNMEA[256];
+char *pNMEA = incomingNMEA;
+bool bStartOfNMEA = true;
+
+void SFE_UBLOX_GNSS::processNMEA(char incoming)
+{
+  /*
+   * New sentence arriving? record the time
+   */
+  if (bStartOfNMEA) {
+    lastNMEATime_ms = millis();
+    bStartOfNMEA = false;
+  }
+  *pNMEA++ = incoming;
+
+  nmea.process(incoming);
+
+  if (incoming == '\n') {
+
+    *pNMEA++ = '\0';
+    
+    if (logFile) {
+      
+      logFile.print( incomingNMEA );
+
+      /*
+       * Include time hack for important GNSS messages.  This is
+       * designed to allow us to correlate GPS time and millis() time in the output stream.
+       */
+      if (strncmp( incomingNMEA+3, "GGA", 3) == 0 || strncmp( incomingNMEA+3, "GLL", 3) == 0) {
+        logFile.print( "$PTH," );
+        logFile.println( lastNMEATime_ms );
+      }
+      
+      flushLog();
+    }
+  
+    if ( printNMEA ) {
+      Serial.print( incomingNMEA );
+    }
+
+    pNMEA = incomingNMEA;
+    bStartOfNMEA = true;
+  }
+}
+
+
 void setup() {
 
   blinkState = BLINK_STATE_OFF;
@@ -360,7 +768,7 @@ void setup() {
 
   lastTime_ms = millis();
 
-  // Wait (maximim of 30 seconds) for hardware serial to appear
+  // Wait (maximum of 30 seconds) for hardware serial to appear
   while (!Serial) {
     if (millis() - lastTime_ms > 30000) {
       break;
@@ -369,9 +777,12 @@ void setup() {
   
   Serial.begin(115200);
 
-  Serial.println(APP_STRING);
-  
-  GPS.begin(0x42);
+  Serial.println( "" );
+
+  Serial.println( APP_STRING );
+
+#ifdef notdef
+  GPS.begin( GPS_I2C_ADDR );
 
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGAGSA);
 
@@ -382,6 +793,7 @@ void setup() {
   GPS.sendCommand(PGCMD_ANTENNA);
 
   delay(1000);
+#endif
 
 /*
 
@@ -389,9 +801,16 @@ void setup() {
     Serial.println("Could not find a valid BME680 sensor, check wiring!");
     while (1);
   }
+  delay(500);
 */
 
-  delay(500);
+  /*
+   * Prepare for USB disk interactions and initialize the SD card interface
+   */
+  usb_msc.setID("Arduino", "SD Card", "1.0");
+  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);
+  usb_msc.setUnitReady(false);
+  usb_msc.begin();
 
   if (!SD.begin( SD_CHIP_SELECT )) {
 
@@ -404,10 +823,29 @@ void setup() {
   delay(500);
 
   Wire.setClock( 400000 );
+  Wire.begin();
 
   Serial.println("Initialize peripheral ICs");
 
-  if (mpu.begin(MPU6050_I2CADDR_DEFAULT, &Wire, 1 )) {
+  pNMEA = incomingNMEA;
+
+  if (myGNSS.begin() == false)
+  {
+    Serial.println(F("u-blox GNSS not detected at default I2C address. Please check wiring. Freezing."));
+    while (1);
+  }
+
+  myGNSS.setI2COutput(COM_TYPE_UBX | COM_TYPE_NMEA); //Set the I2C port to output both NMEA and UBX messages
+  myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
+
+  //This will pipe all NMEA sentences to the serial port so we can see them
+  //myGNSS.setNMEAOutputPort(Serial);
+
+  myGNSS.setNavigationFrequency(1);
+
+  Serial.println("u-blox GNSS present");
+
+  if (mpu.begin(MPU6050_I2C_ADDR, &Wire, 1 )) {
     Serial.println("MPU6050 present");
 
     mpu6050Present = true;
@@ -423,14 +861,16 @@ void setup() {
 
   delay(500);
 
-  if (! dps.begin_I2C(DPS310_I2CADDR_DEFAULT, &Wire)) {
-    Serial.println("Failed to find DPS310 chip");
+  if (! dps.begin_I2C(DPS310_I2C_ADDR, &Wire)) {
+    Serial.println("Failed to find DPS310 chip; stopping");
     while (1) yield();
   }
   Serial.println("DPS310 present");
 
-  dps.configurePressure(DPS310_16HZ, DPS310_16SAMPLES);
-  dps.configureTemperature(DPS310_16HZ, DPS310_16SAMPLES);
+  delay(500);
+
+  dps.configurePressure(DPS310_4HZ, DPS310_4SAMPLES);
+  dps.configureTemperature(DPS310_4HZ, DPS310_4SAMPLES);
 
   /*
   bme.setTemperatureOversampling(BME680_OS_8X);
@@ -439,6 +879,16 @@ void setup() {
   */
   //bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
   //bme.setGasHeater(320, 150); // 320*C for 150 ms
+
+  if (OPS_MODE == OPS_STATIC_TEST) {
+    Serial.println("Welcome. The device has booted in OPS_STATIC_TEST mode.");
+    Serial.println("");
+    Serial.println("This test will take about 20 minutes to complete. You will see");
+    Serial.println("state change messages for STATE_WAIT, STATE_IN_FLIGHT, and STATE_LANDED_1. ");
+    Serial.println("The test is complete when the device returns to STATE_WAIT.");
+    Serial.println("You may then inspect the information in the last log file generated.");
+    Serial.println("---");
+  }
 
   Serial.println("Switching to STATE_WAIT");
   nAppState = STATE_WAIT;
@@ -479,6 +929,28 @@ void setup() {
   }
   
   lastTime_ms = millis();
+
+  /*
+   * Start USB disk operations
+   */
+  uint32_t block_count = SD.getVolume().blocksPerCluster()*SD.getVolume().clusterCount();
+
+  Serial.print("Volume size (MB):  ");
+  Serial.println((block_count/2) / 1024);
+  usb_msc.setCapacity( block_count, 512 );
+  usb_msc.setUnitReady( true );
+
+
+  /*
+   * setup complete
+   */
+  digitalWrite(RED_LED, HIGH);
+  delay(500);
+  digitalWrite(RED_LED, LOW);
+  delay(500);
+  digitalWrite(RED_LED, HIGH);
+  delay(500);
+  digitalWrite(RED_LED, LOW);
 }
 
 void loop() {
@@ -518,6 +990,9 @@ void loop() {
 
   }
 
+  myGNSS.checkUblox();
+
+#ifdef notdef
   while ( GPS.available() > 0 ) {
   
     char c = GPS.read();
@@ -550,50 +1025,21 @@ void loop() {
     }
 
   }
+#endif
 
   /*
    * Processing tasks below are outside of the
    * GPS NMEA processing loop.
    */
 
-   updateTestStateMachine();
+  if (OPS_MODE == OPS_GROUND_TEST) {
+    updateTestStateMachine();
+  }
+  else {
+    updateFlightStateMachine();
+  }
 
-   /*
-    * 
-    */
-
-    sensors_event_t temp_event, pressure_event;
-  
-    if (dps.temperatureAvailable()) {
-      dps_temp->getEvent(&temp_event);
-      /*
-      Serial.print(F("Temperature = "));
-      Serial.print(temp_event.temperature);
-      Serial.println(" *C");
-      Serial.println();
-      */
-    }
-  
-    // Reading pressure also reads temp so don't check pressure
-    // before temp!
-    if (dps.pressureAvailable()) {
-      
-      dps_pressure->getEvent(&pressure_event);
-
-      if (nAppState == STATE_WAIT) {
-        nHGround_feet = dps.readAltitude() * 3.28084;
-      }
-      else {
-        logFile.print("$PENV,");
-        logFile.print(millis());
-        logFile.print(",");
-        logFile.print(pressure_event.pressure);
-        logFile.print(",");
-        logFile.print(dps.readAltitude());
-        logFile.println();
-      }
-      
-    }
+  sampleAndLogAltitude();
 
   /*
    * RED LED Blink Logic
@@ -624,7 +1070,7 @@ void loop() {
     
     timer2_ms = TIMER2_INTERVAL_MS;
     
-    measuredBattery_volts = analogRead(VBATPIN);
+    measuredBattery_volts = analogRead( VBATPIN );
     measuredBattery_volts *= 2;    // we divided by 2, so multiply back
     measuredBattery_volts *= 3.3;  // Multiply by 3.3V, our reference voltage
     measuredBattery_volts /= 1024; // convert to voltage
@@ -759,13 +1205,15 @@ void IMU() {
     
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
-  
+
+#ifdef notdef
     Serial.print(g.gyro.x); // rad per sec
     Serial.print(",");
     Serial.print(g.gyro.y);
     Serial.print(",");
     Serial.print(g.gyro.z);
     Serial.println();
+#endif
   
     if (logFile) {
       logFile.print("$PIMU,");

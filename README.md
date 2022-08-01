@@ -2,8 +2,14 @@
 # Dropkick
 **An experimental logger for skydivers**
 
+## Project Status - July 17, 2022
+I have built and have begun testing the u-blox SAM-M8Q variant of the boards.  So far, the reception capabilities are much better than the
+ CAM-M8 variant.  Flight testing will begin in the next few weeks.
+ 
+ ## Description
+
 This is a stand-alone, battery-powered data logger designed to be
-carried by a skydiver during their jump.  It includes a GNSS (GPS) receiver, IMU, and altitude sensors. Data from all sensors is logged onto a Micro-SD card. The logged data can be reviewed post-jump by to-be-designed software.
+carried by a skydiver during their jump.  It includes a GNSS (GPS) receiver, 6-DOF IMU, and altitude sensors. Data from all sensors is logged onto a Micro-SD card. The logged data can be reviewed post-jump by to-be-designed software.
 
 One objective of this project is to research compact GNSS receiver performance in the dynamic environment that a skydiver routinely experiences. As such, there are currently two different u-blox receiver modules that I'm testing. There is a distinct PCB for each board variant.
 
@@ -14,7 +20,7 @@ One objective of this project is to research compact GNSS receiver performance i
 
 
 ## Directory Structure
-* **pcb-sam** - KiCad 6 PCB project files for the [u-blox SAM-M8Q](https://content.u-blox.com/sites/default/files/SAM-M8Q_DataSheet_%28UBX-16012619%29.pdf) variant
+* **pcb-sam** - KiCad 6 PCB project files for the [u-blox SAM-M8Q](https://content.u-blox.com/sites/default/files/SAM-M8Q_DataSheet_%28UBX-16012619%29.pdf) variant (this is the preferred version)
 * **pcb-cam** - KiCad 6 PCB project files for the [u-blox CAM-M8](https://content.u-blox.com/sites/default/files/CAM-M8-FW3_DataSheet_%28UBX-15031574%29.pdf) variant
 * **enclosure** - Fusion 360 enclosure; designed to be 3D-printed
 * **firmware** - Arduino-based firmware for the microcontroller
@@ -31,6 +37,8 @@ Dimensions: 58mm x 51mm x 20mm
 
 Power: rechargeable 500mAh Li-Polymer battery
 
+Weight: 55 grams
+
 Storage: removable microSD card
 
 Log file format: one log file for each jump; raw log format is an extension of NMEA0183. Details to follow.
@@ -43,6 +51,9 @@ Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino 
 My prototype circuit boards were fabricated by both OSHPark or PCBgogo. Both are excellent manufacturers for hobbyists.
 
 ## Solder Reflow
+
+The soder reflow process has turned out to be a tricky step in constructing the PCBs, particularly with the SAM-M8Q IC.  Basically it requires extra heat soak in
+  order to properly flow the solder.  Some u-blox instructions are repeated below, but I'll ultimately add some notes about what worked best for me.
 
 The [u-blox Hardware Integration Manual](https://www.u-blox.com/en/docs/UBX-16018358) provides some detailed requirements for soldering the GNSS module to a PCB:
 
@@ -82,7 +93,7 @@ The [u-blox Hardware Integration Manual](https://www.u-blox.com/en/docs/UBX-1601
 
 > * Peak reflow temperature: 245 °C
 
-SAC405 solder paste is relatively expensive. I have been unable to locate SAC405 solder paste in hobbyist-friendly quantities, so I opted to use SAC305 for these prototypes. The melting qualities are quite similar, and it retains the essential "no clean" properties required by U-blox -- at the cost of [potentially having slightly less sound solder connections](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.517.4830&rep=rep1&type=pdf#:~:text=The%20North%20American%20industry%20generally,comparable%20to%20that%20of%20SAC405.).
+SAC405 solder paste is relatively expensive. I have been unable to locate SAC405 in hobbyist-friendly quantities, so I opted to use SAC305 for these prototypes. The melting qualities are quite similar, and it retains the essential "no clean" properties required by U-blox -- at the cost of [potentially having slightly less sound solder connections](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.517.4830&rep=rep1&type=pdf#:~:text=The%20North%20American%20industry%20generally,comparable%20to%20that%20of%20SAC405.).
 
 I own a very basic infrared-type reflow oven, a Puhui T962. Even though infrared ovens are not recommended by U-blox, I decided to use it and pay careful attention to the programming of heating profile. First, I did a series to timing experiments with the standard profiles comparing them against the u-blox requirements. It turned out that my oven does not have a standard heating profile that would comply with these requirements. In particular, the closest standard profile held the oven temperature above 217 °C for roughly 90 seconds. That's far longer than the 40 to 60 seconds stated in the requirements. I had to develop a custom profile to match.
 
