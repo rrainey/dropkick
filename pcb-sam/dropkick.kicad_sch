@@ -6,8 +6,8 @@
 
   (title_block
     (title "Dropkick")
-    (date "2022-03-14")
-    (rev "V2-SAM")
+    (date "2022-08-01")
+    (rev "V3-SAM")
     (company "Riley Rainey")
     (comment 1 "Open Hardware")
     (comment 2 "https://github.com/rrainey/dropkick")

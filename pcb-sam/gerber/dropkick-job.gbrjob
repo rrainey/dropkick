@@ -5,13 +5,13 @@
       "Application": "Pcbnew",
       "Version": "(6.0.4-0)"
     },
-    "CreationDate": "2022-05-02T23:13:48-05:00"
+    "CreationDate": "2022-08-01T13:23:05-05:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
       "Name": "dropkick",
       "GUID": "64726f70-6b69-4636-9b2e-6b696361645f",
-      "Revision": "rev?"
+      "Revision": "V3-SAM"
     },
     "Size": {
       "X": 44.55,
