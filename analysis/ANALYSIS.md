@@ -1,6 +1,6 @@
 This is a test of using LaTex embedded in GitHub markdown.
 
-When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}$$
+
 
 $$
 \begin{bmatrix}
@@ -20,4 +20,17 @@ q_1 \\
 q_2 \\
 q_3
 \end{bmatrix}
+$$
+
+From ANSI/AIAA R-004-1992:
+
+$$
+\begin{matrix}
+\\
+\theta = \arcsin(-2 ( q_1 q_3 - q_0 q_2 )) \\
+\\
+\psi = \{ \arctan( \{ 2( q_1 q_2 + q_0 q_3 ) \over ( q_0^2 + q_1^2 - q_2^2 - q_3^2 ) \} ) \} \\
+\\
+\phi = \{ \arctan( \{ 2( q_2 q_3 + q_0 q_1 ) \over ( q_0^2 + q_3^2 - q_1^2 - q_2^2 ) \} ) \} \\
+\end{matrix}
 $$
