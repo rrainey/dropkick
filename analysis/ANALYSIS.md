@@ -22,7 +22,7 @@ q_3
 \end{bmatrix}
 $$
 
-From ANSI/AIAA R-004-1992:
+From ANSI/AIAA R-004-1992 "Atmospheric and Space Flight Vehicle Coordinate Systems"; Euler angles can be recovered from a Quaternion in this way:
 
 $$
 \begin{matrix}
@@ -32,5 +32,24 @@ $$
 \psi = \{ \arctan( \{ 2( q_1 q_2 + q_0 q_3 ) \over ( q_0^2 + q_1^2 - q_2^2 - q_3^2 ) \} ) \} \\
 \\
 \phi = \{ \arctan( \{ 2( q_2 q_3 + q_0 q_1 ) \over ( q_0^2 + q_3^2 - q_1^2 - q_2^2 ) \} ) \} \\
+\end{matrix}
+$$
+
+For orientation quaternion initialization:
+
+$$
+\begin{matrix}
+\\
+q_0 = \cos(\{\psi \over 2 \}) \cos(\{\theta \over 2 \})  \cos(\{\phi \over 2 \}) + 
+      \sin(\{\psi \over 2 \}) \sin(\{\theta \over 2 \})  \sin(\{\phi \over 2 \}) \\
+\\
+q_1 = \cos(\{\psi \over 2 \}) \cos(\{\theta \over 2 \})  \sin(\{\phi \over 2 \}) -
+      \sin(\{\psi \over 2 \}) \sin(\{\theta \over 2 \})  \cos(\{\phi \over 2 \}) \\
+\\
+q_2 = \cos(\{\psi \over 2 \}) \sin(\{\theta \over 2 \})  \cos(\{\phi \over 2 \}) +
+      \sin(\{\psi \over 2 \}) \cos(\{\theta \over 2 \})  \sin(\{\phi \over 2 \}) \\
+\\
+q_3 = - \cos(\{\psi \over 2 \}) \sin(\{\theta \over 2 \})  \sin(\{\phi \over 2 \}) +
+      \sin(\{\psi \over 2 \}) \cos(\{\theta \over 2 \})  \cos(\{\phi \over 2 \}) \\
 \end{matrix}
 $$
