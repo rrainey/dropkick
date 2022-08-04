@@ -1,6 +1,4 @@
-This is a test of using LaTex embedded in GitHub markdown.
-
-
+![](../images/inertial1.png)
 
 $$
 \begin{bmatrix}
