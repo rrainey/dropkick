@@ -59,10 +59,10 @@ The AIAA-standard North-East-Down coordinate frame is used to express world cord
 
 |   Variables       |                        |
 |-------------------|------------------------|
-| $ P, Q, R $     | Body angular velocity rates (sampled) (rad/sec) |
+| $P, Q, R$     | Body angular velocity rates (sampled) (rad/sec) |
 | $a_{BODY}$ | Sampled body acceleration (m/sec^2)
-| $ a, v, p $     | 3D Acceleration (sampled), velocity, and position in NED frame (meters) |
-| $ q $             | Body orientation quaterion (NED Frame) |
-| $ \phi, \theta, \psi $ | roll, pitch, yaw body angles (radians) |
+| $a, v, p$     | 3D Acceleration (sampled), velocity, and position in NED frame (meters) |
+| $q$             | Body orientation quaterion (NED Frame) |
+| $\phi, \theta, \psi$ | roll, pitch, yaw body angles (radians) |
 
 The gravity model used during analysis is to be determined.
