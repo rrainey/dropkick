@@ -15,11 +15,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#include <Adafruit_BME680.h>
 #include <Adafruit_DPS310.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
-#include <Adafruit_GPS.h>
 #include <SPI.h>
 #include <SDPlus.h>
 #include <Adafruit_TinyUSB.h>
@@ -34,14 +32,24 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
 Adafruit_USBD_MSC usb_msc;
 
-#define APP_STRING  "Dropkick, version 0.52"
+#define APP_STRING  "Dropkick, version 0.53"
 #define LOG_VERSION 1
-#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.52\",52"
+#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.53\",53"
+
+/*
+ * Change History affecting sensor output and log file contents
+ * 
+ * Version 53:
+ *    u-blox Dynamic Platform Mode now set to Airborne 2g 
+ *    (see pg. 21 of https://content.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf)
+ *    Logging GNSS fix rate raised from 2 to 4 fixes per second.
+ *    millis() times appearing in a log file are now relative to the start of logging for the file
+ *    Boot initialization now only waits for 20 seconds for a USB connection (was 30 seconds)
+ */
 
 /*
  * I2C peripheral addresses valid for the V2-SAM and V3-SAM PCBs
  */
-
 #define GPS_I2C_ADDR     0x42
 #define DPS310_I2C_ADDR  0x76
 #define MPU6050_I2C_ADDR 0x69
@@ -57,10 +65,13 @@ Adafruit_USBD_MSC usb_msc;
 /*
  * Operating mode
  */
-#define OPS_FLIGHT        0 // normal mode; altimeter used to detect motion
-#define OPS_STATIC_TEST   1  // for testing; time based simulation of vertical motion
+#define OPS_FLIGHT        0  // normal mode; altimeter used to detect motion
+#define OPS_STATIC_TEST   1  // for testing; time based simulation of vertical motion (preferred test mode)
 #define OPS_GROUND_TEST   2  // for testing; uses GPS horizontal movement as an analogue to altitude changes
 
+/*
+ * Set opertaing mode for this build of the firmware here
+ */
 #define OPS_MODE OPS_FLIGHT
 
 #if (OPS_MODE == OPS_STATIC_TEST) 
@@ -144,6 +155,8 @@ int nHDotSample[NUM_H_SAMPLES];
 int nNextHSample = 0;
 uint32_t ulLastHSampleMillis;
 
+uint32_t ulLogfileOriginMillis;
+
 boolean bFirstPressureSample = true;
 
 /**
@@ -197,11 +210,6 @@ void updateHDot(float H_feet) {
 }
 
 /*
- * I2C connection to the BME688 pressure/temp sensor
- */
-//Adafruit_BME680 bme;
-
-/*
  * I2C connection to the MPU-6050 IMU
  */
 Adafruit_MPU6050 mpu;
@@ -223,8 +231,6 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 #define RED_LED       13
 #define GREEN_SD_LED   8
 #define SD_CHIP_SELECT 4
-
-//Adafruit_GPS GPS(&Wire);
 
 File logFile;
 
@@ -251,7 +257,7 @@ uint32_t lastNMEATime_ms = 0;
  * 
  * Timer 3: blink controller for RED LED  (OFF initially)
  * 
- * Timer 4: BME sensor logging interval timer  (OFF initially)
+ * Timer 4: IMU sensor logging interval timer  (OFF initially)
  * 
  * Timer 5: Periodic SD-card log file flushing  (OFF initially)
  */
@@ -368,16 +374,15 @@ void updateTestStateMachine() {
 
       logFile.println( NMEA_APP_STRING );
 
-      // log data; jump to 5HZ logging
-      //GPS.sendCommand(PMTK_API_SET_FIX_CTL_5HZ);
-      //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ);
-
       // Activate altitude / battery sensor logging
       bTimer4Active = true;
       timer4_ms = TIMER4_INTERVAL_MS;
 
       // Activate periodic log file flushing
       startLogFileFlushing();
+
+      // set nav update rate to 4Hz
+      myGNSS.setNavigationFrequency(4);
 
       // Activate "in flight" LED blinking
       setBlinkState ( BLINK_STATE_LOGGING );
@@ -414,6 +419,9 @@ void updateTestStateMachine() {
         setBlinkState ( BLINK_STATE_OFF );
         nAppState = STATE_WAIT;
         bTimer1Active = false;
+
+        // set nav update rate to 1Hz
+        myGNSS.setNavigationFrequency(1);
         
         stopLogFileFlushing();
         logFile.close();
@@ -466,10 +474,6 @@ void updateFlightStateMachine() {
 
       logFile.println( NMEA_APP_STRING );
 
-      // log data; jump to 5HZ logging
-      //GPS.sendCommand(PMTK_API_SET_FIX_CTL_5HZ);
-      //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ);
-
       // Activate altitude / battery sensor logging
       bTimer4Active = true;
       timer4_ms = TIMER4_INTERVAL_MS;
@@ -479,6 +483,9 @@ void updateFlightStateMachine() {
 
       // Activate "in flight" LED blinking
       setBlinkState ( BLINK_STATE_LOGGING );
+
+      // Set "time 0" for log file.
+      ulLogfileOriginMillis = millis();
       
       nAppState = STATE_IN_FLIGHT;
     }
@@ -490,8 +497,8 @@ void updateFlightStateMachine() {
         Serial.println("Switching to STATE_JUMPING");
         nAppState = STATE_JUMPING;
 
-        // set nav update rate to 2Hz
-        myGNSS.setNavigationFrequency(2);
+        // set nav update rate to 4Hz
+        myGNSS.setNavigationFrequency(4);
       }
     }
     break;
@@ -520,8 +527,6 @@ void updateFlightStateMachine() {
         bTimer1Active = false;
       }
       else if (bTimer1Active && timer1_ms <= 0) {
-        //GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
-        //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
 
         // Back to 1Hz update rate
         myGNSS.setNavigationFrequency(1);
@@ -683,7 +688,7 @@ void sampleAndLogAltitude()
     if (nAppState != STATE_WAIT) {
         
       logFile.print("$PENV,");
-      logFile.print(millis());
+      logFile.print(millis() - ulLogfileOriginMillis);
       logFile.print(",");
       logFile.print(pressure_event.pressure);
       logFile.print(",");
@@ -719,7 +724,7 @@ void SFE_UBLOX_GNSS::processNMEA(char incoming)
    * New sentence arriving? record the time
    */
   if (bStartOfNMEA) {
-    lastNMEATime_ms = millis();
+    lastNMEATime_ms = millis() - ulLogfileOriginMillis;
     bStartOfNMEA = false;
   }
   *pNMEA++ = incoming;
@@ -770,7 +775,7 @@ void setup() {
 
   // Wait (maximum of 30 seconds) for hardware serial to appear
   while (!Serial) {
-    if (millis() - lastTime_ms > 30000) {
+    if (millis() - lastTime_ms > 20000) {
       break;
     }
   }
@@ -838,6 +843,15 @@ void setup() {
   myGNSS.setI2COutput(COM_TYPE_UBX | COM_TYPE_NMEA); //Set the I2C port to output both NMEA and UBX messages
   myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
 
+  if (myGNSS.setDynamicModel(DYN_MODEL_AIRBORNE2g) == false) 
+  {
+    Serial.println(F("*** Warning: setDynamicModel failed ***"));
+  }
+  else
+  {
+    Serial.println(F("GNSS Dynamic Platform Model set to AIRBORNE2g"));
+  }
+
   //This will pipe all NMEA sentences to the serial port so we can see them
   //myGNSS.setNMEAOutputPort(Serial);
 
@@ -872,14 +886,6 @@ void setup() {
   dps.configurePressure(DPS310_4HZ, DPS310_4SAMPLES);
   dps.configureTemperature(DPS310_4HZ, DPS310_4SAMPLES);
 
-  /*
-  bme.setTemperatureOversampling(BME680_OS_8X);
-  bme.setHumidityOversampling(BME680_OS_2X);
-  bme.setPressureOversampling(BME680_OS_4X);
-  */
-  //bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
-  //bme.setGasHeater(320, 150); // 320*C for 150 ms
-
   if (OPS_MODE == OPS_STATIC_TEST) {
     Serial.println("Welcome. The device has booted in OPS_STATIC_TEST mode.");
     Serial.println("");
@@ -908,10 +914,6 @@ void setup() {
 
     logFile.flush();
 
-    // log data; jump to 5HZ logging
-    //GPS.sendCommand(PMTK_API_SET_FIX_CTL_5HZ);
-    //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ);
-
     // Activate altitude / battery sensor logging
     bTimer4Active = true;
     timer4_ms = TIMER4_INTERVAL_MS;
@@ -924,6 +926,8 @@ void setup() {
 
     // force battery test timer to fire
     timer2_ms = 0;
+
+    ulLogfileOriginMillis = millis();
     
     nAppState = STATE_IN_FLIGHT;
   }
@@ -955,8 +959,6 @@ void setup() {
 
 void loop() {
 
-  char lastNMEA[MAXLINELENGTH];
-  
   uint32_t curTime_ms = millis();
 
   uint32_t deltaTime_ms = curTime_ms - lastTime_ms;
@@ -1145,7 +1147,7 @@ void PressureSample() {
     if (logFile ) {
     
       logFile.print("$PENV,");
-      logFile.print(millis());
+      logFile.print(millis() - ulLogfileOriginMillis);
       logFile.print(",");
       logFile.print(bme.temperature);
       logFile.print(",");
@@ -1217,7 +1219,7 @@ void IMU() {
   
     if (logFile) {
       logFile.print("$PIMU,");
-      logFile.print(millis());
+      logFile.print(millis() - ulLogfileOriginMillis);
       
       logFile.print(",");
       logFile.print(a.acceleration.x);  // m/s^2
