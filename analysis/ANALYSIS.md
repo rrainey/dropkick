@@ -66,3 +66,11 @@ The AIAA-standard North-East-Down coordinate frame is used to express world cord
 | $\phi, \theta, \psi$ | roll, pitch, yaw body angles (radians) |
 
 The gravity model used during analysis is to be determined.
+
+Adams-Bashforth third-order integration is used to integrate NED velocity and position.
+
+$$x_{n+1} = x_{n} + \frac{T}{12} ( 5 \dot{x}_{n+1} + 8 \dot{x}_n - \dot{x}_{n-1}) ) $$
+
+Where $T$ is the time step.
+
+Euler integration is used for the first two time steps to prime the ABM integrator.
