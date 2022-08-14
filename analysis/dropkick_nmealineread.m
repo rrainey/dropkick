@@ -75,7 +75,10 @@ nmea_options  =  {  '$GNGGA'
                     '$PSAT'
                     '$PENV'
                     '$PIMU'
-                    '$PTH' };
+                    '$PTH'
+                    '$PVER'
+                    '$GPGSV'
+                    '$GLGSV' };
 %
 %%  Find which string we're dealing with
 fields = textscan(nline,'%s','delimiter',',');
@@ -128,102 +131,111 @@ switch case_t
         
         %next data field is the lat
         t_lat  =  fields{3,1};
-        data.latitude  =  ...
-            str2double(t_lat(1:2)) + (str2double(t_lat(3:end))/60);
-        t_latDir = fields{4,1};
-        if(t_latDir  ==  'S')
-            data.latitude  =  data.latitude  *  -1;
+
+        if (length(t_lat) > 0)
+          %fprintf(1, '\nField3 :%s: %s %s\n', t_lat , class(t_lat), nline);
+          data.latitude  =  ...
+              str2double(t_lat(1:2)) + (str2double(t_lat(3:end))/60);
+          t_latDir = fields{4,1};
+          if(t_latDir  ==  'S')
+              data.latitude  =  data.latitude  *  -1;
+          end
+          clear t_lat t_latDir;
+          
+          %then the lon
+          t_lon  = fields{5,1};
+          data.longitude  =  ...
+              str2double(t_lon(1:3)) + (str2double(t_lon(4:end))/60);
+          t_lonDir = fields{6,1};
+          if(t_lonDir  ==  'W')
+              data.longitude  =  data.longitude  *  -1;
+          end
+          clear t_lon t_longDir;
+          
+          %Get the fix quality where 0 = none, 1 = GPS fix, 2 = DGPS fix
+          t_fix = fields{7,1};
+          data.fix  = str2double(t_fix);
+          clear t_fix;
+          
+          %read the number of satellites
+          t_sat = fields{8,1};
+          data.satellites = str2double(t_sat);
+          clear t_sat;
+          
+          %read HDOP
+          t_HDOP= fields{9,1};
+          if isempty(t_HDOP)
+              %do nothing
+          else
+              data.HDOP = str2double(t_HDOP);
+          end
+          clear t_HDOP;
+          
+          %Read Altitude
+          t_alt = fields{10,1};
+          if isempty(t_alt)
+              %do nothing
+          else
+              data.altitude = str2double(t_alt);
+          end
+          clear t_alt;
+          
+          t_altUnit = fields{11,1};
+          if (t_altUnit(1)=='M')
+              %do nothing
+          else
+              fprintf(1,'\tWarning: unknown Altitude Unit - %s\n', t_altUnit);
+          end
+          clear t_altUnit;
+          
+          % Height of geoid.... meh
+          t_altGeo = fields{12,1};
+          clear t_altGeo;
+          t_altGeoUnit = fields{13,1};
+          if (t_altGeoUnit(1)=='M')
+              %do nothing
+          else
+              fprintf(1,'\tWarning: unknown Height over WGS84 Unit - %s\n', t_altGeoUnit);
+          end
+          clear t_altGeoUnit;
+          
+          %Time since DGPS update
+          t_DGPSupdate = fields{14,1};
+                  
+          %Checksum
+          t_chkSum = fields{16,1};
         end
-        clear t_lat t_latDir;
-        
-        %then the lon
-        t_lon  = fields{5,1};
-        data.longitude  =  ...
-            str2double(t_lon(1:3)) + (str2double(t_lon(4:end))/60);
-        t_lonDir = fields{6,1};
-        if(t_lonDir  ==  'W')
-            data.longitude  =  data.longitude  *  -1;
-        end
-        clear t_lon t_longDir;
-        
-        %Get the fix quality where 0 = none, 1 = GPS fix, 2 = DGPS fix
-        t_fix = fields{7,1};
-        data.fix  = str2double(t_fix);
-        clear t_fix;
-        
-        %read the number of satellites
-        t_sat = fields{8,1};
-        data.satellites = str2double(t_sat);
-        clear t_sat;
-        
-        %read HDOP
-        t_HDOP= fields{9,1};
-        if isempty(t_HDOP)
-            %do nothing
-        else
-            data.HDOP = str2double(t_HDOP);
-        end
-        clear t_HDOP;
-        
-        %Read Altitude
-        t_alt = fields{10,1};
-        if isempty(t_alt)
-            %do nothing
-        else
-            data.altitude = str2double(t_alt);
-        end
-        clear t_alt;
-        
-        t_altUnit = fields{11,1};
-        if (t_altUnit(1)=='M')
-            %do nothing
-        else
-            fprintf(1,'\tWarning: unknown Altitude Unit - %s\n', t_altUnit);
-        end
-        clear t_altUnit;
-        
-        % Height of geoid.... meh
-        t_altGeo = fields{12,1};
-        clear t_altGeo;
-        t_altGeoUnit = fields{13,1};
-        if (t_altGeoUnit(1)=='M')
-            %do nothing
-        else
-            fprintf(1,'\tWarning: unknown Height over WGS84 Unit - %s\n', t_altGeoUnit);
-        end
-        clear t_altGeoUnit;
-        
-        %Time since DGPS update
-        t_DGPSupdate = fields{14,1};
-                
-        %Checksum
-        t_chkSum = fields{16,1};
-        
+          
         
     case 2 %% GPGLL Read geographic position [lat/lon] and time
         
         t_lat  = fields{2,1};
-        data.latitude  =  str2double(t_lat(1:2)) + ...
-            (str2double(t_lat(3:end)) / 60);
-        t_latDir  =  fields{3,1};
-        if(t_latDir  ==  'S')
-            data.latitude  =  data.latitude * -1;
-        end
-        clear t_lat t_latDir
-        
-        t_lon  =  fields{4,1};
-        data.longitude  =  str2double(t_lon(1:3)) + ...
-            (str2double(t_lon(4:end)) / 60);
-        t_lonDir = fields{5,1};
-        if(t_lonDir  ==  'W')
-            data.longitude  =  data.longitude  *  -1;
-        end
-        
-        if(length(fields) == 7)
-            t_time  =  fields{6,1};
-            data.BODCTime  =  datenum(t_time,'HHMMSS.FFF');
+
+        if (length(t_lat) > 0)
+          data.latitude  =  str2double(t_lat(1:2)) + ...
+              (str2double(t_lat(3:end)) / 60);
+          t_latDir  =  fields{3,1};
+          if(t_latDir  ==  'S')
+              data.latitude  =  data.latitude * -1;
+          end
+          clear t_lat t_latDir
+          
+          t_lon  =  fields{4,1};
+          data.longitude  =  str2double(t_lon(1:3)) + ...
+              (str2double(t_lon(4:end)) / 60);
+          t_lonDir = fields{5,1};
+          if(t_lonDir  ==  'W')
+              data.longitude  =  data.longitude  *  -1;
+          end
+          
+          if(length(fields) == 7)
+              t_time  =  fields{6,1};
+              data.BODCTime  =  datenum(t_time,'HHMMSS.FFF');
+          else
+              data.BODCTime  =  NaN;
+          end
         else
-            data.BODCTime  =  NaN;
+          data.status = 'nofix';
         end
         
     case 3 %% GPGSA: Read Procision and fix quality information
@@ -257,12 +269,13 @@ switch case_t
         clear t_mode
         
         %% satalite id's in fields 4-15
-        t_satID=str2num(fields(4:15,1:end));
-        if not(isempty(t_satID))
-            data.satellites=t_satID;
-        else
-            data.satellites=NaN;
-        end
+        %%
+        %%t_satID=str2num(fields(4:15,1:end));
+        %%if not(isempty(t_satID))
+        %%    data.satellites=t_satID;
+        %%else
+        %%    data.satellites=NaN;
+        %%end
               
         %% Dilution of precision's
         t_PDOP = fields(16,1:end);
@@ -286,7 +299,9 @@ switch case_t
             data.VDOP=NaN;
         end
         clear t_PDOP t_HDOP t_VDOP
-    
+
+    case 5 %%  GNRMC
+        data.status = 'ignored';
         
     case 6 %% GPVTG: Read course over ground and ground speed
         
@@ -385,7 +400,7 @@ switch case_t
         t_ts_ms = fields{2,1};
         data.ts_ms = str2double(t_ts_ms);
         t_press_hPa = fields{3,1};
-        data.press = str2double(t_press);
+        data.press = str2double(t_press_hPa);
         t_alt_ft = fields{4,1};
         data.alt_ft = str2double(t_alt_ft);
         t_VBatt_volts = fields{5,1};
@@ -416,8 +431,18 @@ switch case_t
         data.ts_ms = str2num(t_ts_ms);
         clear t_ts_ms;
 
+    case 13 %%  PVER
+        t_ver_str = fields{2,1};
+        data.t_ver_str = t_ver_str
+
+    case 14 %%  GxGSV
+        data.status = 'ignored';
+
+    case 15 %%  GxGSV
+        data.status = 'ignored';
+
     otherwise
-        //data  =  NaN;
+        data.status = 'error';
         ierr  =  -2;
         fprintf(1,...
             '\n\tWarning: NMEA reader not yet implemented for this string  -  %s  ...\n',...
