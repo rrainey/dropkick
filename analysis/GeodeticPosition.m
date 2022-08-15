@@ -44,8 +44,7 @@ classdef GeodeticPosition
 
         out = eye(4);
 
-        gc = GeocentricCoordinates([obj.Latitude_rad], [obj.Longitude_rad], [obj.Z_meters]);
-        gcv = [ gc.X_m; gc.Y_m; gc.Z_m ];
+        gcv = obj.GeocentricCoordinates();
 
         uz = - gcv / norm(gcv);
         unorth = [0 ; 0; 1.0];

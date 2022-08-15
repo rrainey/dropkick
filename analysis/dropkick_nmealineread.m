@@ -114,6 +114,9 @@ if (case_t <= 9)
       return
   end
 end
+
+data.type = fields{1,1};
+
 %% TURN ON THE SWITCH!
 switch case_t
     case 1 %% GPGGA Read global positioning system fixed data
@@ -204,6 +207,9 @@ switch case_t
                   
           %Checksum
           t_chkSum = fields{16,1};
+            data.fix_available = 1;
+        else
+            data.fix_available = 0;    
         end
           
         
@@ -433,7 +439,8 @@ switch case_t
 
     case 13 %%  PVER
         t_ver_str = fields{2,1};
-        data.t_ver_str = t_ver_str
+        data.t_ver = t_ver_str;
+        data.ver = str2num(fields{3,1});
 
     case 14 %%  GxGSV
         data.status = 'ignored';
