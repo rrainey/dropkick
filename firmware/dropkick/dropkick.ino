@@ -32,9 +32,9 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
 Adafruit_USBD_MSC usb_msc;
 
-#define APP_STRING  "Dropkick, version 0.53"
+#define APP_STRING  "Dropkick, version 0.54"
 #define LOG_VERSION 1
-#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.53\",53"
+#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.54\",54"
 
 /*
  * Change History affecting sensor output and log file contents
@@ -498,7 +498,8 @@ void updateFlightStateMachine() {
         nAppState = STATE_JUMPING;
 
         // set nav update rate to 4Hz
-        myGNSS.setNavigationFrequency(4);
+        myGNSS.setMeasurementRate(250);
+        myGNSS.setNavigationRate(1);
       }
     }
     break;
@@ -528,8 +529,9 @@ void updateFlightStateMachine() {
       }
       else if (bTimer1Active && timer1_ms <= 0) {
 
-        // Back to 1Hz update rate
-        myGNSS.setNavigationFrequency(1);
+        // Back to 0.5Hz update rate
+        myGNSS.setMeasurementRate(2000);
+        myGNSS.setNavigationRate(1);
         
         bTimer4Active = false;
         Serial.println("Switching to STATE_WAIT");
@@ -843,6 +845,10 @@ void setup() {
   myGNSS.setI2COutput(COM_TYPE_UBX | COM_TYPE_NMEA); //Set the I2C port to output both NMEA and UBX messages
   myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
 
+  // Idle reporting will be at 0.5 Hz
+  myGNSS.setMeasurementRate(2000);
+  myGNSS.setNavigationRate(1);
+
   if (myGNSS.setDynamicModel(DYN_MODEL_AIRBORNE2g) == false) 
   {
     Serial.println(F("*** Warning: setDynamicModel failed ***"));
@@ -1099,6 +1105,13 @@ void loop() {
 
     timer4_ms = TIMER4_INTERVAL_MS;
   }
+
+  /*
+   * Yield - primarily as insurance the SD card driver gets control when
+   *         required.
+   */
+
+  yield();
   
 }
 
