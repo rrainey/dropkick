@@ -1,3 +1,12 @@
+## General
+
+The main module of this GNU Octave code is Modeler.m.
+
+```bash
+$ octave
+octave:1>  [t_plot, a_norm_plot, a_filt_plot, ssim] = Modeler.analyze('LOG00014.TXT');
+```
+
 ![](../images/inertial1.png)
 
 $$
