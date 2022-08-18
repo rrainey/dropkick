@@ -7,6 +7,9 @@ $ octave
 octave:1>  [t_plot, a_norm_plot, a_filt_plot, ssim] = Modeler.analyze('LOG00014.TXT');
 ```
 
+The goal is to see if IMU data can be used to accurately estimate the
+pose and location of the jumper during freefall and while under canopy.
+
 ![](../images/inertial1.png)
 
 $$
@@ -76,10 +79,12 @@ The AIAA-standard North-East-Down coordinate frame is used to express world cord
 
 The gravity model used during analysis is to be determined.
 
-Adams-Bashforth third-order integration is used to integrate NED velocity and position.
+Adams-Bashforth third-order integration will ultimately be used to integrate NED velocity and position.
 
 $$x_{n+1} = x_{n} + \frac{T}{12} ( 5 \dot{x}_{n+1} + 8 \dot{x}_n - \dot{x}_{n-1}) ) $$
 
 Where $T$ is the time step.
 
 Euler integration is used for the first two time steps to prime the ABM integrator.
+
+In the current version of the code, Euler integration is used throughout.
