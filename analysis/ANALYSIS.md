@@ -7,10 +7,14 @@ $ octave
 octave:1>  [t_plot, a_norm_plot, a_filt_plot, ssim] = Modeler.analyze('LOG00014.TXT');
 ```
 
-The goal is to see if IMU data can be used to accurately estimate the
-pose and location of the jumper during freefall and while under canopy.
+The objective is to explore the feasibility to use IMU to accurately estimate the
+pose and location of the jumper in freefall and while under canopy.
 
-![](../images/inertial1.png)
+Pose estimation will require accuracy in both initialization and pose updates.  During initialization, GNSS location fixes and track information can be combined with the apparent gravity vector to keep orientation, position, and velocity information
+up to date. Once we detect that the jump has started, we can then transition to using the IMU's roll rate and acceleration sensors to
+calculate changes in state.
+
+![Basic inertial computations based on IMU sensors](../images/inertial1.png)
 
 $$
 \begin{bmatrix}
@@ -81,10 +85,10 @@ The gravity model used during analysis is to be determined.
 
 Adams-Bashforth third-order integration will ultimately be used to integrate NED velocity and position.
 
-$$x_{n+1} = x_{n} + \frac{T}{12} ( 5 \dot{x}_{n+1} + 8 \dot{x}_n - \dot{x}_{n-1}) ) $$
+$$x_{n+1} = x_{n} + \frac{T}{12} ( 5 \dot{x}_{n+1} + 8 \dot{x}_n - \dot{x}_{n-1} ) $$
 
 Where $T$ is the time step.
 
 Euler integration is used for the first two time steps to prime the ABM integrator.
 
-In the current version of the code, Euler integration is used throughout.
+NOTE: In the current version of the code, Euler integration is used throughout.

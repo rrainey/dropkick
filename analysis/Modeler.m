@@ -34,9 +34,12 @@ classdef Modeler
     end
 
     function [phi, theta, psi] = QToEuler(Q)
-      phi = atan(2 * (Q(3) * Q(4) + Q(1) * Q(2)) / (Q(1)^2 +Q(4)^2 -Q(2)^2-Q(3)^2));
+      phi = atan2(2 * (Q(3) * Q(4) + Q(1) * Q(2)), (Q(1)^2 +Q(4)^2 -Q(2)^2-Q(3)^2));
       theta = asin( -2 * (Q(2) * Q(4) - Q(1) * Q(3)));
-      psi = atan(2 * (Q(2) * Q(3) + Q(1) * Q(4)) / (Q(1)^2 +Q(2)^2 - Q(3)^2 - Q(4)^2));
+      psi = atan2(2 * (Q(2) * Q(3) + Q(1) * Q(4)), (Q(1)^2 +Q(2)^2 - Q(3)^2 - Q(4)^2));
+      if (psi < 0.0)
+        psi += 2.0 * DMath.Pi;
+      end
     end
 
     function Q = EulerToQ(phi, theta, psi)
@@ -132,8 +135,8 @@ classdef Modeler
             %% VTG record
             %% update NED velocity
               groundspeed_mps = data.groundspeed.kph * 1000.0 / 3600.0;
-              v_NED(1) = sin(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
-              v_NED(2) = cos(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
+              v_NED(1) = cos(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
+              v_NED(2) = sin(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
               v_NED(3) = 0.0; % TODO - incorporate rate of climb (derived from filtered altitude reading from PENV record)
 
             elseif (strcmp(data.type,'$GNGGA') == 1)
@@ -294,11 +297,12 @@ classdef Modeler
       %% End of pass 1
       %%
       fprintf(1,...
-            '\n\tEnd of Pass 1; t_jump: %f seconds\nt_deplotment: %f seconds\nt_touchdown: %f seconds\n',...
+            '\n\tEnd of Pass 1; t_jump: %f seconds\n\tt_deplotment: %f seconds\n\tt_touchdown: %f seconds\n',...
             t_jump/1000, t_deployment_start/1000, t_touchdown/1000);
 
       fseek (fid,0);
       pass2_complete = 0;
+      velocity_valid = 0;
 
       tline = fgetl(fid);
       while (ischar(tline) && pass2_complete == 0)
@@ -316,6 +320,8 @@ classdef Modeler
             v_NED(1) = sin(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
             v_NED(2) = cos(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
             v_NED(3) = 0.0; % TODO - incorporate rate of climb (derived from filtered altitude reading from PENV record)
+
+            velocity_valid = 1;
 
           elseif (strcmp(data.type,'$GNGGA') == 1)
             %% GGA record
@@ -372,8 +378,38 @@ classdef Modeler
         tline = fgetl(fid);
       end
 
+      %% generate a body orientation matrix from gravity vector and velocity direction
+      %% use that to generate an initial body Quaternion
+
+      if (velocity_valid == 1)
+
+        v = - v_NED / norm(v_NED); %% IMPORTANT ASSUMPTION: most likely facing the back of the plane
+
+        Z_prime = acc_body / a_norm;
+        Y_prime = cross( Z_prime, v );
+        X_prime = cross( Y_prime, Z_prime );
+
+        B = [ X_prime(1) X_prime(2) X_prime(3) ; ...
+              Y_prime(1) Y_prime(2) Y_prime(3); ...
+              Z_prime(1) Z_prime(2) Z_prime(3) ];
+
+        % print B 
+        B
+
+        %% extract body angles: phi = atan2(b3/c3); theta = -asin(a3); psi = atan2(a2/a1)
+        phi = atan2 (Y_prime(3), Z_prime(3));
+        theta = - asin (X_prime(3));
+        psi = atan2 (X_prime(2), X_prime(1));
+        if (psi < 0.0)
+          psi += 2.0 * DMath.Pi;
+        end
+        %% generate initial pose quaterion from body angles
+        q = Modeler.EulerToQ(phi, theta, psi);
+      end
+      %% end of orientation initialization
+
       %%
-      %% Pass 3 integrate IMU sensor information
+      %% Pass 3 integrate remaining IMU sensor information
       %%
       sim = struct([]);
       tline = fgetl(fid);
