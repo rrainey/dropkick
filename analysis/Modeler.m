@@ -30,6 +30,7 @@ classdef Modeler
         2 * ((Q(3)*Q(4)) - Q(1) * Q(2)), ...
         (Q(1)^2 + Q(4)^2 - Q(2)^2 - Q(3)^2) ...
       ];
+      M = transpose(M);
     end
 
     function [phi, theta, psi] = QToEuler(Q)
@@ -47,7 +48,7 @@ classdef Modeler
         ];
     end
 
-    function [t_plot, a_norm_plot, a_filt_plot, t_sim, q_sim, v_sim, p_sim, euler] = analyze(path)
+    function [t_plot, a_norm_plot, a_filt_plot, sim] = analyze(path)
 
       %% 3x3 convert sensor frame to body frame
       %% TODO: compute dynamically from data while still in aircraft
@@ -374,14 +375,7 @@ classdef Modeler
       %%
       %% Pass 3 integrate IMU sensor information
       %%
-      t_sim = [];
-      q_sim = [];
-      v_sim = [];
-      p_sim = [];
-      euler = [];
-
-      sim_e_count = 0;
-
+      sim = struct([]);
       tline = fgetl(fid);
       while ischar(tline)
 
@@ -431,11 +425,23 @@ classdef Modeler
             R = a(3);
 
             %% Update orientation 
-            Omega_b = [0.0   P    Q    R ; ...
-                      -P   0.0   -R    Q; ...
-                      -Q     R  0.0   -P; ...
-                      -R    -Q    P  0.0];
+
+            %K_epsilion = 10.0 * (1.0 - (q(1)^2 + q(2)^2 + q(3)^2 + q(4)^2));
+
+            Omega_b = [0.0   P     Q    R ; ...
+                        -P   0.0  -R    Q; ...
+                        -Q   R   0.0   -P; ...
+                        -R   -Q    P  0.0];
+
+            % From ANSI/AIAA R-004-1992 E.2.2:
             
+            %q_dot = [ ...
+            %       - 0.5 * (q(2) * P + q(3) * Q + q(4) * R ) + K_epsilion * q(1); ...
+            %         0.5 * (q(1) * P + q(3) * R - q(4) * Q ) + K_epsilion * q(2); ...
+            %         0.5 * (q(1) * Q + q(4) * P - q(2) * R ) + K_epsilion * q(3); ...
+            %         0.5 * (q(1) * R + q(2) * Q - q(3) * P ) + K_epsilion * q(4) ...
+            %];
+
             %% update body orientation quaternion
             q_dot = - 0.5 * Omega_b * q;
             q = q + q_dot * delta_t_sec;
@@ -454,20 +460,14 @@ classdef Modeler
 
             ts_last_ms = data.ts_ms;
 
-            t_sim(end+1) = data.ts_ms;
-            if (sim_e_count > 0)
-              q_sim = [ q_sim; flip(q) ];
-              v_sim = [ v_sim; flip(v_NED) ];
-              p_sim = [ p_sim; flip(p_NED)];
-              euler = [euler; flip( (180.0 / DMath.Pi) * Modeler.QToEuler(q) )];
-            else
-              q_sim = flip(q);
-              v_sim = flip(v_NED);
-              p_sim = flip(p_NED);
-              euler = flip( (180.0 / DMath.Pi) * Modeler.QToEuler(q) );
-            end
-
-            sim_e_count = sim_e_count + 1;
+            element.t = data.ts_ms / 1000.0;
+            element.q = q;
+            [phi, theta, psi] = Modeler.QToEuler(q);
+            element.euler = [ DMath.RADtoDEG(phi); DMath.RADtoDEG(theta); DMath.RADtoDEG(psi) ];
+            element.v = v_NED;
+            element.p = p_NED;
+            sim(end+1) = element;
+            clear element;
 
           end
 
@@ -487,7 +487,7 @@ classdef Modeler
       xlabel("time(s)");
       ylabel("m/sec^2");
       title ("acceleration forces");
-      print (hf, "acc_plot.pdf");
+      print (hf, "acc_plot.png", "-dpng");
     endfunction
   endmethods
 endclassdef
