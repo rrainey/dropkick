@@ -18,6 +18,7 @@ classdef Modeler
 
   methods(Static)
 
+    %% See E.2.4 in ANSI/AIAA R-004-1992
     function M = QToMatrix(Q)
       M = [ ...
         (Q(1)^2 + Q(2)^2 - Q(3)^2 - Q(4)^2), ...
@@ -33,6 +34,7 @@ classdef Modeler
       M = transpose(M);
     end
 
+    %% See E.2.3 in ANSI/AIAA R-004-1992
     function [phi, theta, psi] = QToEuler(Q)
       phi = atan2(2 * (Q(3) * Q(4) + Q(1) * Q(2)), (Q(1)^2 +Q(4)^2 -Q(2)^2-Q(3)^2));
       theta = asin( -2 * (Q(2) * Q(4) - Q(1) * Q(3)));
@@ -42,6 +44,7 @@ classdef Modeler
       end
     end
 
+    %% See E.2.1 in ANSI/AIAA R-004-1992
     function Q = EulerToQ(phi, theta, psi)
       Q = [ 
           cos(psi/2) * cos(theta/2) * cos(phi/2) + sin(psi/2) * sin(theta/2) * sin(phi/2); ...
@@ -53,7 +56,9 @@ classdef Modeler
 
     function [t_plot, a_norm_plot, a_filt_plot, sim] = analyze(path)
 
-      %% 3x3 convert sensor frame to body frame
+      fprintf(1, "This module is completely experimental code; use at your own peril.\n\n")
+
+      %% "idealized" 3x3 convert sensor frame to body frame
       %% See below: compute dynamically from data while still in aircraft
       SensorToBody = [ 0 0 1 ; ...
                        1 0 0 ; ...
@@ -109,20 +114,22 @@ classdef Modeler
       %% setGyroRange(MPU6050_RANGE_250_DEG);
       %% setAccelerometerRange(MPU6050_RANGE_4_G); (requires factoring calibration values by 0.5)
 
-      acc_corr_raw = [ -1012/2  -2581/2    1308/2 ];
-      gyro_corr_raw = [ -37      28      -1 ];
-      accel_scale = 8192;   %% sensor units to m/sec^2 (based on 4G scale)
-      gyro_scale = 131;     %% sensor units to rad/sec (based on 250 deg/sec scale)
+      acc_corr_raw = [ -1012/2 ; -2581/2  ;  1308/2 ];
+      gyro_corr_raw = [ -37  ;    28  ;    -1 ];
+      accel_scale = 8192;   %% sensor units to m/sec^2 divisor (based on 4G scale)
+      gyro_scale = 131;     %% sensor units to rad/sec divisor (based on 250 deg/sec scale)
 
       % Adafruit sensor package constants ...
       SENSORS_GRAVITY_EARTH = 9.80665;
       SENSORS_DPS_TO_RADS = 0.017453293;
 
+      g_NED = [0; 0; SENSORS_GRAVITY_EARTH ]; %% m/sec^s
+
       AFILT_TIME_CONSTANT = 2.0;
 
       %%%%%%%%%%%%%%%%%%%%
       %%
-      %% PASS 1: Determine the time of major events in the log (exit time, chute deployment, landing)
+      %% PHASE 1: Determine the time of major events in the log (exit time, chute deployment, landing)
       %%
       %%%%%%%%%%%%%%%%%%%%
 
@@ -139,24 +146,25 @@ classdef Modeler
 
             if (strcmp(data.type,'$GNVTG') == 1)
             %% VTG record
-            %% update NED velocity
-              groundspeed_mps = data.groundspeed.kph * 1000.0 / 3600.0;
-              v_NED(1) = cos(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
-              v_NED(2) = sin(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
-              v_NED(3) = 0.0; % TODO - incorporate rate of climb (derived from filtered altitude reading from PENV record)
+            %% update initial NED velocity
+              %%groundspeed_mps = data.groundspeed.kph * 1000.0 / 3600.0;
+              %%v_NED(1) = cos(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
+              %%v_NED(2) = sin(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
+              %%v_NED(3) = 0.0; % TODO - incorporate rate of climb (derived from filtered altitude reading from PENV record)
 
             elseif (strcmp(data.type,'$GNGGA') == 1)
             %% GGA record
-            %% update NED location
+            %% update initial position in NED coordinates
 
               if (data.fix_available == 1)
 
-                ecf_pos = GeocentricCoordinates(DMath.DEGtoRAD(data.latitude), DMath.DEGtoRAD(data.longitude), data.altitude);
-                p_NED = [ ...
-                  ECFtoNED(1,1) * ecf_pos.X_m + ECFtoNED(1,2) * ecf_pos.Y_m + ECFtoNED(1,3) * ecf_pos.Z_m + ECFtoNED(1,4) ; ...
-                  ECFtoNED(2,1) * ecf_pos.X_m + ECFtoNED(2,2) * ecf_pos.Y_m + ECFtoNED(2,3) * ecf_pos.Z_m + ECFtoNED(2,4) ; ...
-                  ECFtoNED(3,1) * ecf_pos.X_m + ECFtoNED(3,2) * ecf_pos.Y_m + ECFtoNED(3,3) * ecf_pos.Z_m + ECFtoNED(3,4) ; ...
-                ];
+                %%ecf_pos = GeodeticPosition(DMath.DEGtoRAD(data.latitude), DMath.DEGtoRAD(data.longitude), data.altitude).GeocentricCoordinates();
+                %%p_NED = ECFtoNED(1:3, 1:3) * ( ecf_pos + ECFtoNED(1:3,4:4) );
+                %p_NED = [ ...
+                %  ECFtoNED(1,1) * ecf_pos(1) + ECFtoNED(1,2) * ecf_pos(2) + ECFtoNED(1,3) * ecf_pos(3) ; ...
+                %  ECFtoNED(2,1) * ecf_pos(1) + ECFtoNED(2,2) * ecf_pos(2) + ECFtoNED(2,3) * ecf_pos(3) ; ...
+                %  ECFtoNED(3,1) * ecf_pos(1) + ECFtoNED(3,2) * ecf_pos(2) + ECFtoNED(3,3) * ecf_pos(3) ; ...
+                %];
 
               end
 
@@ -174,8 +182,6 @@ classdef Modeler
                       ( data.y_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(2) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
                       ( data.z_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(3) ) * SENSORS_GRAVITY_EARTH / accel_scale ...
                     ];
-
-              acc_body = SensorToBody * acc_sensor;
 
               a_norm = norm(acc_sensor);
 
@@ -226,7 +232,7 @@ classdef Modeler
                     ];
 
 
-                acc_body = SensorToBody * acc_sensor;
+                %acc_body = SensorToBody * acc_sensor;
 
                 a_norm = norm(acc_sensor);
 
@@ -252,38 +258,38 @@ classdef Modeler
                 end
 
                 %% axis rotation rates in sensor frame
-                rot_sensor = [( data.x_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(1) ) / gyro_scale * SENSORS_DPS_TO_RADS ;...
-                              ( data.y_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(2) ) / gyro_scale * SENSORS_DPS_TO_RADS ;...
-                              ( data.z_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(3) ) / gyro_scale * SENSORS_DPS_TO_RADS ]; 
+                %rot_sensor = [( data.x_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(1) ) / gyro_scale * SENSORS_DPS_TO_RADS ;...
+                %              ( data.y_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(2) ) / gyro_scale * SENSORS_DPS_TO_RADS ;...
+                 %             ( data.z_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(3) ) / gyro_scale * SENSORS_DPS_TO_RADS ]; 
 
                 %% axis rotation rates in body frame
-                a = SensorToBody * rot_sensor;
+                %a = SensorToBody * rot_sensor;
 
-                P = a(1);
-                Q = a(2);
-                R = a(3);
+                %P = a(1);
+                %Q = a(2);
+                %R = a(3);
 
                 %% Update orientation 
-                Omega_b = [0.0   P    Q    R ; ...
-                          -P   0.0   -R    Q; ...
-                          -Q     R  0.0   -P; ...
-                          -R    -Q    P  0.0];
+                %Omega_b = [0.0   P    Q    R ; ...
+                %          -P   0.0   -R    Q; ...
+                %          -Q     R  0.0   -P; ...
+                %         -R    -Q    P  0.0];
                 
                 %% update body orientation quaternion
-                q_dot = - 0.5 * Omega_b * q;
-                q = q + q_dot * delta_t_sec;
+                %q_dot = - 0.5 * Omega_b * q;
+                %q = q + q_dot * delta_t_sec;
 
-                g_NED = [0; 0; 9.814]; %% m/sec^s
+                %g_NED = [0; 0; 9.814]; %% m/sec^s
 
-                B = Modeler.QToMatrix(q);
+                %B = Modeler.QToMatrix(q);
 
-                a_NED = B * acc_body + g_NED;
+                %a_NED = B * acc_body + g_NED;
 
                 %% Euler integration (TODO: switch to ABM)
 
-                v_NED = v_NED + a_NED * delta_t_sec;
+                %v_NED = v_NED + a_NED * delta_t_sec;
 
-                p_NED = p_NED + v_NED * delta_t_sec;
+                %p_NED = p_NED + v_NED * delta_t_sec;
 
               end
 
@@ -305,7 +311,7 @@ classdef Modeler
 
       %%%%%%%%%%%%%%%%%%%%
       %%
-      %% PASS 2A: Skip to the start of the jump in the data stream
+      %% PHASE 2: Rewind the log and skip to the start of the jump in the data stream
       %%
       %% Collect inital state information along the way
       %%
@@ -323,14 +329,10 @@ classdef Modeler
 
           if (strcmp(data.type,'$GNVTG') == 1)
             %% VTG record
-            %% update NED velocity
-            groundspeed_mps = data.groundspeed.kph * 1000.0 / 3600.0;
-            v_NED(1) = cos(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
-            v_NED(2) = sin(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
-            v_NED(3) = 0.0; % TODO - incorporate rate of climb (derived from filtered altitude reading from PENV record)
-
+            %% save data to initialize velocity
             velocity_valid = 1;
-            last_truecourse = DMath.DEGtoRAD(data.truecourse);
+            groundspeed_mps = data.groundspeed.kph * 1000.0 / 3600.0;
+            last_truecourse_rad_rad = DMath.DEGtoRAD(data.truecourse);
 
           elseif (strcmp(data.type,'$GNGGA') == 1)
             %% GGA record
@@ -338,12 +340,8 @@ classdef Modeler
 
             if (data.fix_available == 1)
 
-              ecf_pos = GeocentricCoordinates(DMath.DEGtoRAD(data.latitude), DMath.DEGtoRAD(data.longitude), data.altitude);
-              p_NED = [ ...
-                ECFtoNED(1,1) * ecf_pos.X_m + ECFtoNED(1,2) * ecf_pos.Y_m + ECFtoNED(1,3) * ecf_pos.Z_m + ECFtoNED(1,4) ; ...
-                ECFtoNED(2,1) * ecf_pos.X_m + ECFtoNED(2,2) * ecf_pos.Y_m + ECFtoNED(2,3) * ecf_pos.Z_m + ECFtoNED(2,4) ; ...
-                ECFtoNED(3,1) * ecf_pos.X_m + ECFtoNED(3,2) * ecf_pos.Y_m + ECFtoNED(3,3) * ecf_pos.Z_m + ECFtoNED(3,4) ; ...
-              ];
+              ecf_pos = GeodeticPosition(DMath.DEGtoRAD(data.latitude), DMath.DEGtoRAD(data.longitude), data.altitude).GeocentricCoordinates();
+              p_NED = ECFtoNED(1:3, 1:3) * ( ecf_pos + ECFtoNED(1:3,4:4) );
 
             end
 
@@ -356,25 +354,12 @@ classdef Modeler
 
             %% apply corrections to reported MPU6050 sensor values
 
-            acc_sensor = [ ...
-                    ( data.x_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(1) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
-                    ( data.y_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(2) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
-                    ( data.z_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(3) ) * SENSORS_GRAVITY_EARTH / accel_scale ...
-                  ];
+            %%acc_sensor = [ ...
+            %%        ( data.x_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(1) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
+            %%        ( data.y_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(2) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
+            %%        ( data.z_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(3) ) * SENSORS_GRAVITY_EARTH / accel_scale ...
+            %%      ];
 
-            acc_body = SensorToBody * acc_sensor;
-
-            a_norm = norm(acc_sensor);
-
-            a_filt_dot(3) = AFILT_TIME_CONSTANT * (a_norm - a_filt);
-
-            %% ABM Integration of acceleration filter
-            %a_filt = a_filt + delta_t_sec / 12.0 * ( 5.0 * a_filt_dot(3) + 8.0 * a_filt_dot(2) - a_filt_dot(1) );
-
-            a_filt = a_filt + delta_t_sec * a_filt_dot(3);
-
-            a_filt_dot(1) = a_filt_dot(2);
-            a_filt_dot(2) = a_filt_dot(3);
 
             ts_last_ms = data.ts_ms;
 
@@ -388,6 +373,11 @@ classdef Modeler
       end
 
       if (velocity_valid == 1)
+
+        v_NED(1) = cos(last_truecourse_rad) * groundspeed_mps;
+        v_NED(2) = sin(last_truecourse_rad) * groundspeed_mps;
+        v_NED(3) = 0.0; % TODO - incorporate rate of climb (derived from filtered altitude reading from PENV record)
+
 
         %% Under ideal conditions, the Dropkick device will be in a chest pocket of the jumper
         %% with the sensor Z-axis pointed forward.  Since it typically won't sit in
@@ -418,24 +408,39 @@ classdef Modeler
         %% seated without a left/right lean (phi = 0.0).
         theta = - asin ( (acc_body/norm(acc_body))(1) );
         phi = 0;
-        psi = last_truecourse + DMath.Pi;
+        psi = last_truecourse_rad + DMath.Pi;
         %% generate initial pose quaternion from body angles
         q = Modeler.EulerToQ(phi, theta, psi);
+
+        fprintf(1, "initial conditions:");
+        p_NED
+        v_NED
+        q
+        SensorToBody
       else
         fprintf(1, "Error: unable to estimate the initial pose.")
       end
       %% end of orientation initialization
 
+      steps = 0;
+
       %%%%%%%%%%%%%%%%%%%%
       %%
-      %% PASS 2B: integrate remaining IMU sensor information
+      %% PHASE 3: integrate remaining IMU sensor information in the log file
       %%
       %%%%%%%%%%%%%%%%%%%%
+
+      acc_corr_sens = acc_corr_raw / accel_scale * SENSORS_GRAVITY_EARTH;
+
+      gyro_corr_sens = gyro_corr_raw / gyro_scale * SENSORS_DPS_TO_RADS;
+
       sim = struct([]);
       tline = fgetl(fid);
-      while ischar(tline)
+      while ischar(tline) && steps < 10
 
         [data ier] = dropkick_nmealineread(tline);
+
+        steps = steps + 1;
 
         if (ier == 0)
 
@@ -448,30 +453,34 @@ classdef Modeler
 
             %% apply corrections to reported MPU6050 sensor values
 
-            acc_sensor = [ ...
-                    ( data.x_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(1) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
-                    ( data.y_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(2) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
-                    ( data.z_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(3) ) * SENSORS_GRAVITY_EARTH / accel_scale ...
-                  ];
+            %acc_sensor = [ ...
+            %        ( data.x_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(1) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
+            %        ( data.y_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(2) ) * SENSORS_GRAVITY_EARTH / accel_scale ; ...
+            %        ( data.z_acc / SENSORS_GRAVITY_EARTH * accel_scale - acc_corr_raw(3) ) * SENSORS_GRAVITY_EARTH / accel_scale ...
+            %      ];
+
+            acc_sensor = [data.x_acc; data.y_acc; data.z_acc] + acc_corr_sens;
 
             acc_body = SensorToBody * acc_sensor;
 
-            a_norm = norm(acc_sensor);
+            %a_norm = norm(acc_sensor);
 
-            a_filt_dot(3) = AFILT_TIME_CONSTANT * (a_norm - a_filt);
+            %a_filt_dot(3) = AFILT_TIME_CONSTANT * (a_norm - a_filt);
 
             %% ABM Integration of acceleration filter
             %a_filt = a_filt + delta_t_sec / 12.0 * ( 5.0 * a_filt_dot(3) + 8.0 * a_filt_dot(2) - a_filt_dot(1) );
 
-            a_filt = a_filt + delta_t_sec * a_filt_dot(3);
+            %a_filt = a_filt + delta_t_sec * a_filt_dot(3);
 
-            a_filt_dot(1) = a_filt_dot(2);
-            a_filt_dot(2) = a_filt_dot(3);
+            %a_filt_dot(1) = a_filt_dot(2);
+            %a_filt_dot(2) = a_filt_dot(3);
 
             % axis rotation rates in sensor frame
-            rot_sensor = [( data.x_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(1) ) / gyro_scale * SENSORS_DPS_TO_RADS ;...
-                          ( data.y_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(2) ) / gyro_scale * SENSORS_DPS_TO_RADS ;...
-                          ( data.z_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(3) ) / gyro_scale * SENSORS_DPS_TO_RADS ]; 
+            %rot_sensor = [( data.x_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(1) ) / gyro_scale * SENSORS_DPS_TO_RADS ;...
+            %              ( data.y_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(2) ) / gyro_scale * SENSORS_DPS_TO_RADS ;...
+            %              ( data.z_rot / SENSORS_DPS_TO_RADS * gyro_scale  - gyro_corr_raw(3) ) / gyro_scale * SENSORS_DPS_TO_RADS ]; 
+
+            rot_sensor = [data.x_rot; data.y_rot; data.z_rot] + gyro_corr_sens;
 
             %% axis rotation rates in body frame
             a = SensorToBody * rot_sensor;
@@ -500,19 +509,27 @@ classdef Modeler
 
             %% update body orientation quaternion
             q_dot = - 0.5 * Omega_b * q;
-            q = q + q_dot * delta_t_sec;
 
-            g_NED = [0; 0; 9.814]; %% m/sec^s
+            q = q + delta_t_sec * q_dot;
 
             B = Modeler.QToMatrix(q);
 
-            a_NED = B * acc_body + g_NED;
+            a_NED = ( B * acc_body ) + g_NED;
+
+            delta_t_sec
+
+            acc_body
+
+            a_NED
+
+            a
+
 
             %% Euler integration (TODO: switch to ABM)
 
-            v_NED = v_NED + a_NED * delta_t_sec;
+            v_NED = v_NED + delta_t_sec * a_NED;
 
-            p_NED = p_NED + v_NED * delta_t_sec;
+            p_NED = p_NED + delta_t_sec * v_NED;
 
             ts_last_ms = data.ts_ms;
 
