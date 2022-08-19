@@ -54,7 +54,7 @@ classdef Modeler
     function [t_plot, a_norm_plot, a_filt_plot, sim] = analyze(path)
 
       %% 3x3 convert sensor frame to body frame
-      %% TODO: compute dynamically from data while still in aircraft
+      %% See below: compute dynamically from data while still in aircraft
       SensorToBody = [ 0 0 1 ; ...
                        1 0 0 ; ...
                        0 1 0 ];
@@ -119,6 +119,12 @@ classdef Modeler
       SENSORS_DPS_TO_RADS = 0.017453293;
 
       AFILT_TIME_CONSTANT = 2.0;
+
+      %%%%%%%%%%%%%%%%%%%%
+      %%
+      %% PASS 1: Determine the time of major events in the log (exit time, chute deployment, landing)
+      %%
+      %%%%%%%%%%%%%%%%%%%%
 
       fid = fopen(path);
       tline = fgetl(fid);
@@ -293,21 +299,23 @@ classdef Modeler
 
         tline = fgetl(fid);
       end
-      %% 
-      %% End of pass 1
-      %%
       fprintf(1,...
             '\n\tEnd of Pass 1; t_jump: %f seconds\n\tt_deplotment: %f seconds\n\tt_touchdown: %f seconds\n',...
             t_jump/1000, t_deployment_start/1000, t_touchdown/1000);
 
+      %%%%%%%%%%%%%%%%%%%%
+      %%
+      %% PASS 2A: Skip to the start of the jump in the data stream
+      %%
+      %% Collect inital state information along the way
+      %%
+      %%%%%%%%%%%%%%%%%%%%
       fseek (fid,0);
       pass2_complete = 0;
       velocity_valid = 0;
 
       tline = fgetl(fid);
       while (ischar(tline) && pass2_complete == 0)
-
-        %% Seek to just prior to the jump
 
         [data ier] = dropkick_nmealineread(tline);
 
@@ -317,11 +325,12 @@ classdef Modeler
             %% VTG record
             %% update NED velocity
             groundspeed_mps = data.groundspeed.kph * 1000.0 / 3600.0;
-            v_NED(1) = sin(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
-            v_NED(2) = cos(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
+            v_NED(1) = cos(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
+            v_NED(2) = sin(DMath.DEGtoRAD(data.truecourse)) * groundspeed_mps;
             v_NED(3) = 0.0; % TODO - incorporate rate of climb (derived from filtered altitude reading from PENV record)
 
             velocity_valid = 1;
+            last_truecourse = DMath.DEGtoRAD(data.truecourse);
 
           elseif (strcmp(data.type,'$GNGGA') == 1)
             %% GGA record
@@ -378,39 +387,50 @@ classdef Modeler
         tline = fgetl(fid);
       end
 
-      %% generate a body orientation matrix from gravity vector and velocity direction
-      %% use that to generate an initial body Quaternion
-
       if (velocity_valid == 1)
 
-        v = - v_NED / norm(v_NED); %% IMPORTANT ASSUMPTION: most likely facing the back of the plane
+        %% Under ideal conditions, the Dropkick device will be in a chest pocket of the jumper
+        %% with the sensor Z-axis pointed forward.  Since it typically won't sit in
+        %% a pocket perfectly "level", we must estimate the actual rest angle.
+        %% Use the gravity vector to estimate that value.
+        %%
+        %% TODO: we might consider using a filtered acceleration vector for gravity to
+        %% reduce the noise error here.
 
-        Z_prime = acc_body / a_norm;
-        Y_prime = cross( Z_prime, v );
-        X_prime = cross( Y_prime, Z_prime );
+        g = acc_sensor / norm(acc_sensor);
+        fwd = [0; 0; 1];
+        %% Y = Z x X;
+        right = cross(g, fwd);
+        %% Z = X x Y;
+        down = cross (fwd, right);
 
-        B = [ X_prime(1) X_prime(2) X_prime(3) ; ...
-              Y_prime(1) Y_prime(2) Y_prime(3); ...
-              Z_prime(1) Z_prime(2) Z_prime(3) ];
+        SensorToBody = [ fwd(1)   fwd(2)   fwd(3) ; ...
+                         right(1) right(2) right(3); ...
+                         down(1)  down(2)  down(3) ];
 
-        % print B 
-        B
+        %% Now use that transform to estimate the pitch angle of the jumper
+        %% (They are likely still seated, often with their back tilted forward).
 
-        %% extract body angles: phi = atan2(b3/c3); theta = -asin(a3); psi = atan2(a2/a1)
-        phi = atan2 (Y_prime(3), Z_prime(3));
-        theta = - asin (X_prime(3));
-        psi = atan2 (X_prime(2), X_prime(1));
-        if (psi < 0.0)
-          psi += 2.0 * DMath.Pi;
-        end
-        %% generate initial pose quaterion from body angles
+        acc_body = SensorToBody * acc_sensor;
+
+        %% Now we can build the NED-space Body orientation Quaternion
+        %% Assume the jumper is facing the back of the plane (negative GNSS velocity vector),
+        %% seated without a left/right lean (phi = 0.0).
+        theta = - asin ( (acc_body/norm(acc_body))(1) );
+        phi = 0;
+        psi = last_truecourse + DMath.Pi;
+        %% generate initial pose quaternion from body angles
         q = Modeler.EulerToQ(phi, theta, psi);
+      else
+        fprintf(1, "Error: unable to estimate the initial pose.")
       end
       %% end of orientation initialization
 
+      %%%%%%%%%%%%%%%%%%%%
       %%
-      %% Pass 3 integrate remaining IMU sensor information
+      %% PASS 2B: integrate remaining IMU sensor information
       %%
+      %%%%%%%%%%%%%%%%%%%%
       sim = struct([]);
       tline = fgetl(fid);
       while ischar(tline)
