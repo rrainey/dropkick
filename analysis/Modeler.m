@@ -18,45 +18,9 @@ classdef Modeler
 
   methods(Static)
 
-    %% See E.2.4 in ANSI/AIAA R-004-1992
-    function M = QToMatrix(Q)
-      M = [ ...
-        (Q(1)^2 + Q(2)^2 - Q(3)^2 - Q(4)^2), ...
-        2 * ((Q(2)*Q(3)) + Q(1) * Q(4)), ...
-        2 * ((Q(2)*Q(4)) - Q(1) * Q(3)) ; ...
-        2 * ((Q(2)*Q(3)) - Q(1) * Q(4)), ...
-        (Q(1)^2 + Q(3)^2 - Q(2)^2 - Q(4)^2), ...
-        2 * ((Q(3)*Q(4)) + Q(1) * Q(2)); ...
-        2 * ((Q(2)*Q(4)) + Q(1) * Q(3)), ...
-        2 * ((Q(3)*Q(4)) - Q(1) * Q(2)), ...
-        (Q(1)^2 + Q(4)^2 - Q(2)^2 - Q(3)^2) ...
-      ];
-      M = transpose(M);
-    end
-
-    %% See E.2.3 in ANSI/AIAA R-004-1992
-    function [phi, theta, psi] = QToEuler(Q)
-      phi = atan2(2 * (Q(3) * Q(4) + Q(1) * Q(2)), (Q(1)^2 +Q(4)^2 -Q(2)^2-Q(3)^2));
-      theta = asin( -2 * (Q(2) * Q(4) - Q(1) * Q(3)));
-      psi = atan2(2 * (Q(2) * Q(3) + Q(1) * Q(4)), (Q(1)^2 +Q(2)^2 - Q(3)^2 - Q(4)^2));
-      if (psi < 0.0)
-        psi += 2.0 * DMath.Pi;
-      end
-    end
-
-    %% See E.2.1 in ANSI/AIAA R-004-1992
-    function Q = EulerToQ(phi, theta, psi)
-      Q = [ 
-          cos(psi/2) * cos(theta/2) * cos(phi/2) + sin(psi/2) * sin(theta/2) * sin(phi/2); ...
-          cos(psi/2) * cos(theta/2) * sin(phi/2) - sin(psi/2) * sin(theta/2) * cos(phi/2); ...
-          cos(psi/2) * sin(theta/2) * cos(phi/2) + sin(psi/2) * cos(theta/2) * sin(phi/2); ...
-        - cos(psi/2) * sin(theta/2) * sin(phi/2) + sin(psi/2) * cos(theta/2) * cos(phi/2); ...
-        ];
-    end
-
     function [t_plot, a_norm_plot, a_filt_plot, sim] = analyze(path)
 
-      fprintf(1, "This module is completely experimental code; use at your own peril.\n\n")
+      fprintf(1, "\n\nThis module is completely experimental code; use at your own peril.\n\n")
 
       %% "idealized" 3x3 convert sensor frame to body frame
       %% See below: compute dynamically from data while still in aircraft
@@ -73,7 +37,7 @@ classdef Modeler
       %% 3) A sudden "drop" signals the start of a jump.
 
       %% this could be done better: use initial gravity reading to set initial roll and pitch
-      q = Modeler.EulerToQ(0.0, 0.0, 0.0);
+      q = Quaternion(0.0, 0.0, 0.0);
 
       p_NED = [0; 0; 0];
       v_NED = [0; 0; 0];
@@ -332,7 +296,7 @@ classdef Modeler
             %% save data to initialize velocity
             velocity_valid = 1;
             groundspeed_mps = data.groundspeed.kph * 1000.0 / 3600.0;
-            last_truecourse_rad_rad = DMath.DEGtoRAD(data.truecourse);
+            last_truecourse_rad = DMath.DEGtoRAD(data.truecourse);
 
           elseif (strcmp(data.type,'$GNGGA') == 1)
             %% GGA record
@@ -410,7 +374,7 @@ classdef Modeler
         phi = 0;
         psi = last_truecourse_rad + DMath.Pi;
         %% generate initial pose quaternion from body angles
-        q = Modeler.EulerToQ(phi, theta, psi);
+        q = Quaternion(phi, theta, psi);
 
         fprintf(1, "initial conditions:");
         p_NED
@@ -493,7 +457,7 @@ classdef Modeler
 
             %K_epsilion = 10.0 * (1.0 - (q(1)^2 + q(2)^2 + q(3)^2 + q(4)^2));
 
-            Omega_b = [0.0   P     Q    R ; ...
+            Omega_q = [0.0   P     Q    R ; ...
                         -P   0.0  -R    Q; ...
                         -Q   R   0.0   -P; ...
                         -R   -Q    P  0.0];
@@ -508,11 +472,11 @@ classdef Modeler
             %];
 
             %% update body orientation quaternion
-            q_dot = - 0.5 * Omega_b * q;
+            q_dot = - 0.5 * Omega_q * q;
 
             q = q + delta_t_sec * q_dot;
 
-            B = Modeler.QToMatrix(q);
+            B = q.ToMatrix();
 
             a_NED = ( B * acc_body ) + g_NED;
 
@@ -521,8 +485,6 @@ classdef Modeler
             acc_body
 
             a_NED
-
-            a
 
 
             %% Euler integration (TODO: switch to ABM)
@@ -535,7 +497,7 @@ classdef Modeler
 
             element.t = data.ts_ms / 1000.0;
             element.q = q;
-            [phi, theta, psi] = Modeler.QToEuler(q);
+            [phi, theta, psi] = q.ToEuler();
             element.euler = [ DMath.RADtoDEG(phi); DMath.RADtoDEG(theta); DMath.RADtoDEG(psi) ];
             element.v = v_NED;
             element.p = p_NED;
@@ -551,6 +513,45 @@ classdef Modeler
       fclose(fid);
 
     endfunction
+
+    function tests() 
+      g = [ 0; 9.02; 0];
+      g = g / norm(g);
+      fwd = [0; 0; 1];
+      %% Y = Z x X;
+      right = cross(g, fwd);
+      %% Z = X x Y;
+      down = cross (fwd, right);
+
+      SensorToBody = [ fwd(1)   fwd(2)   fwd(3) ; ...
+                      right(1) right(2) right(3); ...
+                       down(1)  down(2)  down(3) ];
+
+      theta = 0.0;
+      phi = 0;
+      psi = DMath.Pi / 2.0; %% heading "east"
+      %% generate initial pose quaternion from body angles
+      q1 = Quaternion(phi, theta, psi);
+
+      B_B = q1.ToMatrix();
+
+      fprintf(1, "should be 0 1 0:");
+
+      fwd_NED = B_B * [1; 0; 0]
+
+      fprintf(1, "initial conditions:");
+      q1
+      SensorToBody
+
+      B_B
+
+      fprintf(1, "should be 0 0 1 ");
+      SensorToBody * [ 0; 1.0; 0]
+
+      fprintf(1, "should be 1 0 0 ");
+      SensorToBody * [ 0; 0; 1.0 ]
+    end
+
 
     function plot_util(t_plot, a_norm, a_filt)
       hf = figure ();
