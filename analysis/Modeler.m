@@ -370,7 +370,7 @@ classdef Modeler
         %% Now we can build the NED-space Body orientation Quaternion
         %% Assume the jumper is facing the back of the plane (negative GNSS velocity vector),
         %% seated without a left/right lean (phi = 0.0).
-        theta = - asin ( (acc_body/norm(acc_body))(1) );
+        theta = - asin ( - (acc_body/norm(acc_body))(1) );
         phi = 0;
         psi = last_truecourse_rad + DMath.Pi;
         %% generate initial pose quaternion from body angles
@@ -502,7 +502,9 @@ classdef Modeler
             element.t = data.ts_ms / 1000.0;
             element.q = q.vec();
             [phi, theta, psi] = q.ToEuler();
-            element.euler = [ DMath.RADtoDEG(phi); DMath.RADtoDEG(theta); DMath.RADtoDEG(psi) ];
+            element.phi_deg = DMath.RADtoDEG(phi); 
+            element.theta_deg = DMath.RADtoDEG(theta); 
+            element.psi_deg = DMath.RADtoDEG(psi);
             element.v = v_NED;
             element.p = p_NED;
             sim(end+1) = element;
