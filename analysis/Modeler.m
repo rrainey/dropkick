@@ -376,10 +376,14 @@ classdef Modeler
         %% generate initial pose quaternion from body angles
         q = Quaternion(phi, theta, psi);
 
+        phi
+        theta
+        psi
+
         fprintf(1, "initial conditions:");
         p_NED
         v_NED
-        q
+        q.vec()
         SensorToBody
       else
         fprintf(1, "Error: unable to estimate the initial pose.")
@@ -496,7 +500,7 @@ classdef Modeler
             ts_last_ms = data.ts_ms;
 
             element.t = data.ts_ms / 1000.0;
-            element.q = q;
+            element.q = q.vec();
             [phi, theta, psi] = q.ToEuler();
             element.euler = [ DMath.RADtoDEG(phi); DMath.RADtoDEG(theta); DMath.RADtoDEG(psi) ];
             element.v = v_NED;
