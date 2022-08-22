@@ -19,7 +19,7 @@ classdef Quaternion
     q;
   end
   methods
-    %% Generate a mmatrix suitable to convert from world coordinated to
+    %% Generate a matrix suitable to convert from world coordinates to
     %% body coordinates
     %% See E.2.4 in ANSI/AIAA R-004-1992
     function M = ToMatrix(obj)
@@ -69,16 +69,28 @@ classdef Quaternion
       end
     end
 
+    % Overload matrix multiplication
     function p = mtimes(obj1, obj2)
       p = Quaternion(obj1 * obj2.vec());
     end
 
+    % Overload binary addition
     function p = plus(obj1, obj2)
       p = Quaternion(obj1.vec() + obj2.vec());
     end
 
     function vec = vec(obj)
       vec = obj.q;
+    end
+
+    % Overload display operator
+    function disp(obj)
+      printf(" [ ");
+      for i = 1 : 4;
+        printf("%.5g ", obj.q(i));
+      end
+      printf("] ");
+      printf ("\n");
     end
 
   endmethods
