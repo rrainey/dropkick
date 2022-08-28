@@ -32,12 +32,20 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
 Adafruit_USBD_MSC usb_msc;
 
-#define APP_STRING  "Dropkick, version 0.54"
+#define APP_STRING  "Dropkick, version 0.55"
 #define LOG_VERSION 1
-#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.54\",54"
+#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.55\",55"
 
 /*
+ * Last built with Arduino version 1.8.19
+ * 
  * Change History affecting sensor output and log file contents
+ * 
+ * Version 55:
+ *    Disable NMEA satellite status sentences when in higher GNSS position polling rates
+ *    
+ * Version 54:
+ *    5 Hz GNSS message rate when in freefall till landing.
  * 
  * Version 53:
  *    u-blox Dynamic Platform Mode now set to Airborne 2g 
@@ -500,6 +508,9 @@ void updateFlightStateMachine() {
         // set nav update rate to 4Hz
         myGNSS.setMeasurementRate(250);
         myGNSS.setNavigationRate(1);
+
+        myGNSS.disableNMEAMessage( UBX_NMEA_GSA, COM_PORT_I2C );
+        myGNSS.disableNMEAMessage (UBX_NMEA_GSV, COM_PORT_I2C );
       }
     }
     break;
@@ -532,6 +543,9 @@ void updateFlightStateMachine() {
         // Back to 0.5Hz update rate
         myGNSS.setMeasurementRate(2000);
         myGNSS.setNavigationRate(1);
+
+        myGNSS.enableNMEAMessage( UBX_NMEA_GSA, COM_PORT_I2C );
+        myGNSS.enableNMEAMessage (UBX_NMEA_GSV, COM_PORT_I2C );
         
         bTimer4Active = false;
         Serial.println("Switching to STATE_WAIT");
