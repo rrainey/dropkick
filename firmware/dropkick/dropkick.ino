@@ -856,7 +856,13 @@ void setup() {
     while (1);
   }
 
-  myGNSS.setI2COutput(COM_TYPE_UBX | COM_TYPE_NMEA); //Set the I2C port to output both NMEA and UBX messages
+  // Disable unused output channels
+  
+  myGNSS.setUART1Output(0);
+  myGNSS.setUART2Output(0);
+
+  //myGNSS.setI2COutput(COM_TYPE_UBX | COM_TYPE_NMEA); //Set the I2C port to output both NMEA and UBX messages
+  myGNSS.setI2COutput(COM_TYPE_NMEA);
   myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
 
   // Idle reporting will be at 0.5 Hz
