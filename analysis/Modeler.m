@@ -18,7 +18,7 @@ classdef Modeler
 
   methods(Static)
 
-    function [t_plot, a_norm_plot, a_filt_plot, sim] = analyze(path)
+    function [t_plot, a_norm_plot, a_filt_plot, alt_ft_plot, sim] = analyze(path)
 
       fprintf(1, "\n\nThis module is completely experimental code; use at your own peril.\n\n")
 
@@ -47,6 +47,7 @@ classdef Modeler
       t_plot = [];
       a_norm_plot= [];
       a_filt_plot = [];
+      alt_ft_plot = [];
 
       t_jump = -1;
       t_deployment_start = -1;
@@ -54,6 +55,8 @@ classdef Modeler
 
       t_first_ms = -1;
 
+      alt_ft = 0;
+      alt_filt_ft = 0; % not yet implemented
 
       %% Skydive Spaceland Dallas - Student/A/B landing target (8/2022)
       %% Source: Google Maps
@@ -90,6 +93,10 @@ classdef Modeler
       g_NED = [0; 0; SENSORS_GRAVITY_EARTH ]; %% m/sec^s
 
       AFILT_TIME_CONSTANT = 2.0;
+
+      ALT_FILT_TIME_CONSTANT = 0.2; % not yet implemented
+
+      first = 1;
 
       %%%%%%%%%%%%%%%%%%%%
       %%
@@ -132,11 +139,20 @@ classdef Modeler
 
               end
 
+            elseif (strcmp(data.type,'$PENV') == 1) 
+
+              alt_ft = data.alt_ft;
+
             elseif (strcmp(data.type,'$PIMU') == 1)
               %% PIMU record
               %% just look for freefall while we build a filtered acceleration normal
 
-              delta_t_ms = data.ts_ms - ts_last_ms;
+              if (first == 0)
+                delta_t_ms = data.ts_ms - ts_last_ms;
+              else
+                delta_t_ms = 1000 / 40;
+                first = 0;
+              end
               delta_t_sec = delta_t_ms / 1000.0;
 
               %% apply corrections to reported MPU6050 sensor values
@@ -162,6 +178,7 @@ classdef Modeler
               t_plot(end+1) = data.ts_ms / 1000.0;
               a_filt_plot(end+1) = a_filt;
               a_norm_plot(end+1) = a_norm;
+              alt_ft_plot(end+1) = alt_ft;
 
               %%% mark start of jump as 15 seconds before approximate start of freefall
               if (a_filt < 6.00 && t_jump < 0.0)
@@ -178,7 +195,11 @@ classdef Modeler
           else
             %% All other modes ...
 
-            if (strcmp(data.type,'$PIMU') == 1)
+            if (strcmp(data.type,'$PENV') == 1) 
+
+              alt_ft = data.alt_ft;
+
+            elseif (strcmp(data.type,'$PIMU') == 1)
 
               %% if first reading (== -1), we don't have enough info to
               %% integrate an update; just record t as t_last
@@ -213,6 +234,7 @@ classdef Modeler
                 t_plot(end+1) = data.ts_ms / 1000.0;
                 a_filt_plot(end+1) = a_filt;
                 a_norm_plot(end+1) = a_norm;
+                alt_ft_plot(end+1) = alt_ft;
 
                 if (a_filt > 18.0 && t_deployment_start < 0.0)
                   t_deployment_start = data.ts_ms;
@@ -559,6 +581,7 @@ classdef Modeler
     end
 
 
+    % plot unfiltered, filtered acceleration
     function plot_util(t_plot, a_norm, a_filt)
       hf = figure ();
       plot(t_plot, a_norm);
@@ -568,6 +591,39 @@ classdef Modeler
       ylabel("m/sec^2");
       title ("acceleration forces");
       print (hf, "acc_plot.png", "-dpng");
+    endfunction
+
+    % plot unfiltered, filtered acceleration along with altitude
+    function plot_util2(t_plot, a_norm, a_filt, alt)
+      hf = figure ();
+      plotyy(t_plot, a_norm, t_plot, alt);
+      hold on;
+      plot(t_plot, a_filt, "g");
+      xlabel("time(sec)");
+      ylabel("m/sec^2");
+      title ("acceleration forces");
+      print (hf, "acc_plot2.png", "-dpng");
+    endfunction
+
+    % Locate the range of relevant elements in a time series
+    %
+    % Examines the timestamps in a time series; returns the index of first and last elements
+    % that are within the specified range of values.
+    function [index1, index2] = relevantElements(t_series, t_start, t_end)
+      index1 = index2 = 0;
+      for i = 1:size(t_series, 2)
+        if (t_series(i) >= t_start)
+          index1 = i;
+          break;
+        end
+      end
+      index2 = index1;
+      for i = index1:size(t_series, 2)
+        if (t_series(i) > t_end)
+          index2 = i-1;
+          break;
+        end
+      end
     endfunction
   endmethods
 endclassdef
