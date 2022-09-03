@@ -70,8 +70,26 @@ classdef Quaternion
     end
 
     % Overload matrix multiplication
+    % TODO: must check if both objects are quaternions
+    %Quaternion operator * (const Quaternion &b) const
+		%{
+		%	Vector3d av(GetE(1), GetE(2), GetE(3));
+		%	Vector3d bv(b.GetE(1), b.GetE(2), b.GetE(3));
+		%	Vector3d v = bv *  GetE(0) +  av * b.GetE(0) + 
+		%	  av.CrossProduct(bv);
+		%	return Quaternion (GetE(0) * b.GetE(0) - (av ^ bv),
+		%		v.x, v.y, v.z);
+		%}
     function p = mtimes(obj1, obj2)
-      p = Quaternion(obj1 * obj2.vec());
+      if (isa(obj1,'Quaternion') == 1 && isa(obj2,'Quaternion') == 1)
+        % Thank you, Sir William Rowan Hamilton
+        av = [ obj1.q(2) obj1.q(3) obj1.q(4) ];
+        bv = [ obj2.q(2) obj2.q(3) obj2.q(4) ];
+        v = bv * obj1.q(1) + av * obj2.q(1) + cross(av, bv);
+        p = Quaternion( obj1.q(1) * obj2.q(1) - dot(av, bv), v(1), v(2), v(3));
+      else
+        p = Quaternion(obj1 * obj2.vec());
+      end
     end
 
     % Overload binary addition
@@ -85,9 +103,10 @@ classdef Quaternion
 
     % Overload display operator
     function disp(obj)
+      s = [' ' 'i' 'j' 'k'];
       printf(" [ ");
       for i = 1 : 4;
-        printf("%.5g ", obj.q(i));
+        printf("%.5g%s ", obj.q(i), s(i));
       end
       printf("] ");
       printf ("\n");
