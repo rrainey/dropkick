@@ -2,11 +2,14 @@
 # Dropkick
 **An experimental logger for skydivers**
 
+## Project Status - September 3, 2022
+I have resolved the buffering issue in the GNSS reporting stream and continue to work on developing analysis tools using Octave.
+
 ## Project Status - August 18, 2022
 I have collected the first log files from several jumps. GPS data is usable, although there are intermittent u-blox buffering errors
  interspersed in these logs. I have been exploring the feasibility of pose reconstruction from IMU log data.
  I am using GNU Octave for this investigation. The code resides in the ./analysis subdirectory.  It should be considered entirely experimental
- at this stage - don't trust the reliability or accuracy of any of that code based on where I am today,
+ at this stage - don't trust the accuracy of any of that code based on where I am today,
  
  ## Description
 
