@@ -52,11 +52,11 @@ USB micro-B connector (for recharging and programming)
 Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino programming via the USB connector.
 
 ## PCB Notes
-My prototype circuit boards were fabricated by both OSHPark or PCBgogo. Both are excellent manufacturers for hobbyists.
+My prototype circuit boards were fabricated by both OSHPark and PCBgogo. Both are excellent manufacturers for hobbyists.
 
 ## Solder Reflow
 
-The soder reflow process has turned out to be a tricky step in constructing the PCBs, particularly with the SAM-M8Q IC.  Basically it requires extra heat soak in
+The solder reflow process has turned out to be a tricky step in constructing the PCBs, particularly with the SAM-M8Q IC.  Basically it requires extra heat soak in
   order to properly flow the solder.  Some u-blox instructions are repeated below, but I'll ultimately add some notes about what worked best for me.
 
 The [u-blox Hardware Integration Manual](https://www.u-blox.com/en/docs/UBX-16018358) provides some detailed requirements for soldering the GNSS module to a PCB:
