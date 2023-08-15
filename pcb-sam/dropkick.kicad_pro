@@ -420,7 +420,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "dropkick.dsn",
-      "step": "dropkick.step",
+      "step": "models/dropkick-v4.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""
