@@ -2,6 +2,17 @@
 # Dropkick
 **An experimental logger for skydivers**
 
+## Project Status - September 10, 2023
+I decided to revise the SAM variant PCB to use more modern ICs:
+
+* Change GNSS to the u-blox SAM-M10Q (the M10Q is pin compatible with the M8Q)
+* Change IMU to TDK InvenSense ICM-42688
+* Add hardware interrupt lines from the IMU
+* Change barometric sensor to the Bosch BMP-390
+* Switch to a USB-C connector
+
+Revised firmware still needs to be implemented.
+
 ## Project Status - September 3, 2022
 I have resolved the buffering issue in the GNSS reporting stream and continue to work on developing analysis tools using Octave.
 
