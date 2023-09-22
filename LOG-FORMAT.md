@@ -80,6 +80,21 @@ This record logs pressure information captured from the [DPS310 sensor IC](https
 
 `$PTH,13925296`
 
+## $PSFC Record
+
+This records the estimated surface altitude of the landing area.
+
+### Comma-separated Fields
+| Description   |                                        |
+|---------------|----------------------------------------|
+| $PSFC         | Record identifier                      |
+| estimated surface altitude | Expressed in feet, MSL. Note that the device rarely rests on the ground surface while operating -- no effort is made to take into account the resting height of the device for these samples.   |
+
+
+### $SFC Example
+
+`$PSFC,880`
+
 
 ## Reporting Rates
 
