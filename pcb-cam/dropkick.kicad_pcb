@@ -4938,6 +4938,7 @@
     (tedit 61E33511) (tstamp 65a03f17-ced8-4246-a43c-1368e802afa0)
     (at 71.05 56.55 90)
     (descr "2-Pin JST PH Series Right-Angle Connector (+/- for batteries)")
+    (property "Manufacturer Part" "S2B-PH-SM4-TB")
     (property "Sheetfile" "dropkick.kicad_sch")
     (property "Sheetname" "")
     (path "/27a17605-e78a-4939-884c-260b5756ef06")
