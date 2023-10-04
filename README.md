@@ -2,6 +2,10 @@
 # Dropkick
 **An experimental logger for skydivers**
 
+## Project Status - October 4, 2023
+I have prepared a revised CAM-M8C board variant, mostly to experiment with mounting this on a telescope as an elevation/azimuth pointing sensor. I also migrated the CAM-M8C project to
+KiCad 7.
+
 ## Project Status - September 10, 2023
 I decided to revise the SAM variant PCB to use more modern ICs:
 
@@ -32,7 +36,7 @@ One objective of this project is to research compact GNSS receiver performance i
 ![](images/dropkick-03.png)
 
 ## Directory Structure
-* **pcb-sam** - KiCad 6 PCB project files for the [u-blox SAM-M8Q](https://content.u-blox.com/sites/default/files/SAM-M8Q_DataSheet_%28UBX-16012619%29.pdf) variant (this is the preferred version)
+* **pcb-sam** - KiCad 6 PCB project files for the [u-blox SAM-M10Q](https://content.u-blox.com/sites/default/files/SAM-M8Q_DataSheet_%28UBX-16012619%29.pdf) variant (this is the preferred version)
 * **pcb-cam** - KiCad 6 PCB project files for the [u-blox CAM-M8](https://content.u-blox.com/sites/default/files/CAM-M8-FW3_DataSheet_%28UBX-15031574%29.pdf) variant
 * **enclosure** - Fusion 360 enclosure; designed to be 3D-printed
 * **firmware** - Arduino-based firmware for the microcontroller
