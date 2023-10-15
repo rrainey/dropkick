@@ -69,6 +69,10 @@ Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino 
 ## PCB Notes
 My prototype circuit boards were fabricated by both OSHPark and PCBgogo. Both are excellent manufacturers for hobbyists.
 
+### Bootloader
+
+I flash both of these boards with the [Adafruit Trinket M0 bootloader](https://github.com/adafruit/uf2-samdx1/releases/download/v3.15.0/bootloader-trinket_m0-v3.15.0.bin) bin image. The current version is 3.15. Programming is performed via a Segger J-Link USB adapter using Microchip Studio (formerly Atmel Studio). Use Device = "ATSAMD21G18A". Program from the bootload .bin image file and then set the USER_WORD_0.NVMCTRL_BOOTPROT fuse to 8192 bytes.
+
 ## Solder Reflow
 
 The solder reflow process has turned out to be a tricky step in constructing the PCBs, particularly with the SAM-M8Q IC.  Basically it requires extra heat soak in
