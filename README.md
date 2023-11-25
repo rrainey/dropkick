@@ -2,29 +2,13 @@
 # Dropkick
 **An experimental logger for skydivers**
 
-## Project Status - October 4, 2023
-I have prepared a revised CAM-M8C board variant, mostly to experiment with mounting this on a telescope as an elevation/azimuth pointing sensor. I also migrated the CAM-M8C project to
-KiCad 7.
+There are two board variants active in thie project: V4 SAM, is the board I used for skydiving. V5-CAM is a design repurposed for real-time
+use on a telescope mount. See [CHANGELOG.md](CHANGELOG.md) for a more detailed history.
 
-## Project Status - September 10, 2023
-I decided to revise the SAM variant PCB to use more modern ICs:
+Revised firmware still needs to be implemented for V4-SAM.
 
-* Change GNSS to the u-blox SAM-M10Q (the M10Q is pin compatible with the M8Q)
-* Change IMU to TDK InvenSense ICM-42688
-* Add hardware interrupt lines from the IMU
-* Change barometric sensor to the Bosch BMP-390
-* Switch to a USB-C connector
-
-Revised firmware still needs to be implemented.
-
-## Project Status - September 3, 2022
-I have resolved the buffering issue in the GNSS reporting stream and continue to work on developing analysis tools using Octave.
-
-## Project Status - August 18, 2022
-I have collected the first log files from several jumps. GPS data is usable, although there are intermittent u-blox buffering errors
- interspersed in these logs. I have been exploring the feasibility of pose reconstruction from IMU log data.
- I am using GNU Octave for this investigation. The code resides in the ./analysis subdirectory.  It should be considered entirely experimental
- at this stage - don't trust the accuracy of any of that code based on where I am today,
+## Sponsorship
+I'd like to thank [PCBWay](https://www.pcbway.com/) for their generous sponsorship. PCBWay supplied prototype PCBs and solder stencils for the CAM variant of this project. My experience with PCBWay predates their sponsorship here. In my experience, PCBWay has been a great choice for my projects. They deliver good PCBs and accurate stencils quickly.
  
  ## Description
 
@@ -37,7 +21,7 @@ One objective of this project is to research compact GNSS receiver performance i
 
 ## Directory Structure
 * **pcb-sam** - KiCad 6 PCB project files for the [u-blox SAM-M10Q](https://content.u-blox.com/sites/default/files/SAM-M8Q_DataSheet_%28UBX-16012619%29.pdf) variant (this is the preferred version)
-* **pcb-cam** - KiCad 6 PCB project files for the [u-blox CAM-M8](https://content.u-blox.com/sites/default/files/CAM-M8-FW3_DataSheet_%28UBX-15031574%29.pdf) variant
+* **pcb-cam** - KiCad 7 PCB project files for the [u-blox CAM-M8](https://content.u-blox.com/sites/default/files/CAM-M8-FW3_DataSheet_%28UBX-15031574%29.pdf) variant
 * **enclosure** - Fusion 360 enclosure; designed to be 3D-printed
 * **firmware** - Arduino-based firmware for the microcontroller
 * **images** - supporting images and videos
