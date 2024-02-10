@@ -31,9 +31,14 @@ gerber.zip
 *.ses
 *.rules
 
+# KiCAD Kiri files
+.kiri
+
 # Exported BOM files
 *.xml
 *.csv
 
 # ignore VS Code items
 .vs
+
+build

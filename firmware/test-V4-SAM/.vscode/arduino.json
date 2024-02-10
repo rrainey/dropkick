@@ -1,0 +1,6 @@
+{
+    "configuration": "opt=fastest,usbstack=arduino,debug=off",
+    "board": "adafruit:samd:adafruit_trinket_m0",
+    "sketch": "test-V4-SAM.ino",
+    "port": "COM14"
+}
