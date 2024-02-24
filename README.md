@@ -2,10 +2,11 @@
 # Dropkick
 **An experimental logger for skydivers**
 
-There are two board variants active in thie project: V4 SAM, is the board I used for skydiving. V5-CAM is a design repurposed for real-time
-use on a telescope mount. See [CHANGELOG.md](CHANGELOG.md) for a more detailed history.
+These devices are designed to be carried in a skydiver's breast pocket. The device loggs GPS position, barometric altitude, body rotation rates, and acceleration forces.
+Data is logged to a SD card for analysis on the ground.
 
-Revised firmware still needs to be implemented for V4-SAM.
+There are two board variants active in thie project: V4 SAM, is the board I use for skydiving. V5-CAM is a design repurposed for real-time
+use on a telescope poiting experiments. See [CHANGELOG.md](CHANGELOG.md) for a more detailed history.
 
 ## Sponsorship
 I'd like to thank [PCBWay](https://www.pcbway.com/) for their generous sponsorship. PCBWay supplied prototype PCBs and solder stencils for the CAM variant of this project. My experience with PCBWay predates their sponsorship here. In my experience, PCBWay has been a great choice for my projects. They deliver good PCBs and accurate stencils quickly.
@@ -20,7 +21,7 @@ One objective of this project is to research compact GNSS receiver performance i
 ![](images/dropkick-03.png)
 
 ## Directory Structure
-* **pcb-sam** - KiCad 6 PCB project files for the [u-blox SAM-M10Q](https://content.u-blox.com/sites/default/files/SAM-M8Q_DataSheet_%28UBX-16012619%29.pdf) variant (this is the preferred version)
+* **pcb-sam** - KiCad 6 PCB project files for the [u-blox SAM-M10Q](https://content.u-blox.com/sites/default/files/SAM-M8Q_DataSheet_%28UBX-16012619%29.pdf) variant (this is the preferred variant for skydiving)
 * **pcb-cam** - KiCad 7 PCB project files for the [u-blox CAM-M8](https://content.u-blox.com/sites/default/files/CAM-M8-FW3_DataSheet_%28UBX-15031574%29.pdf) variant
 * **enclosure** - Fusion 360 enclosure; designed to be 3D-printed
 * **firmware** - Arduino-based firmware for the microcontroller
@@ -50,12 +51,22 @@ USB micro-B connector (for recharging and programming)
 
 Bootloader programmed via a 10-pin J-Link compatible connector; routine Arduino programming via the USB connector.
 
+** Compiling Firmware
+The Arduino board type should be set to "Adafruit Trinket M0" with Tiny USB enabled.
+
+These libraries are required:
+- Adafruit_BMP3XX
+- ICM42688
+- SparkFun u-blox GNSS Arduino_Library
+- MicroNMEA  (2.0.6)
+- SD (install the custom fork that I maintain on github)
+
 ## PCB Notes
 My prototype circuit boards were fabricated by both OSHPark and PCBgogo. Both are excellent manufacturers for hobbyists.
 
 ### Bootloader
 
-I flash both of these boards with the [Adafruit Trinket M0 bootloader](https://github.com/adafruit/uf2-samdx1/releases/download/v3.15.0/bootloader-trinket_m0-v3.15.0.bin) bin image. The current version is 3.15. Programming is performed via a Segger J-Link USB adapter using Microchip Studio (formerly Atmel Studio). Use Device = "ATSAMD21G18A". Program from the bootload .bin image file and then set the USER_WORD_0.NVMCTRL_BOOTPROT fuse to 8192 bytes.
+I flash all variants with the [Adafruit Trinket M0 UF2 bootloader](https://github.com/adafruit/uf2-samdx1/releases/download/v3.15.0/bootloader-trinket_m0-v3.15.0.bin) bin image. The current version is 3.15. Programming is performed via a Segger J-Link USB adapter using Microchip Studio (formerly Atmel Studio). Use Device = "ATSAMD21G18A". Program from the bootload .bin image file and then set the USER_WORD_0.NVMCTRL_BOOTPROT fuse to 8192 bytes.
 
 ## Solder Reflow
 

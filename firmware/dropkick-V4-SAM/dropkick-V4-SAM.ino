@@ -1,6 +1,14 @@
 /* 
  * This file is part of the Kick distribution (https://github.com/rrainey/dropkick
- * Copyright (c) 2022 Riley Rainey
+ * Copyright (c) 2023 Riley Rainey
+ * 
+ * =========================================================================
+ * 
+ * COMPATIBILITY
+ * 
+ * This sketch is designed for use with the latest SAM variant, V5-SAM
+ * 
+ * =========================================================================
  * 
  * This program is free software: you can redistribute it and/or modify  
  * it under the terms of the GNU General Public License as published by  
@@ -15,26 +23,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <Adafruit_DPS310.h>
-#include <Adafruit_MPU6050.h>
+#include <Adafruit_BMP3XX.h>
+#include <ICM42688.h>
 #include <Adafruit_Sensor.h>
 #include <SPI.h>
-#include <SDPlus.h>
+#include <SD.h>
 #include <Adafruit_TinyUSB.h>
-
-#include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
-
-SFE_UBLOX_GNSS myGNSS;
-
-#include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
-char nmeaBuffer[100];
-MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
-
-Adafruit_USBD_MSC usb_msc;
-
-#define APP_STRING  "Dropkick, version 0.55"
-#define LOG_VERSION 1
-#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.55\",55"
 
 /*
  * Last built with Arduino version 1.8.19
@@ -56,11 +50,36 @@ Adafruit_USBD_MSC usb_msc;
  */
 
 /*
- * I2C peripheral addresses valid for the V2-SAM and V3-SAM PCBs
+ * I2C peripheral addresses valid for the V4-SAM PCBs
  */
-#define GPS_I2C_ADDR     0x42
-#define DPS310_I2C_ADDR  0x76
-#define MPU6050_I2C_ADDR 0x69
+#define GPS_I2C_ADDR      0x42
+#define BMP390_I2C_ADDR   0x76
+#define ICM42688_I2C_ADDR 0x68
+
+/*
+ * I2C connection to the ICM-42688 IMU
+ */
+ICM42688_FIFO imu(Wire, ICM42688_I2C_ADDR);
+
+bool imuPresent = false;
+
+#define SEALEVELPRESSURE_HPA (1013.25)
+
+Adafruit_BMP3XX bmp;
+
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
+
+SFE_UBLOX_GNSS myGNSS;
+
+#include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
+char nmeaBuffer[100];
+MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
+
+Adafruit_USBD_MSC usb_msc;
+
+#define APP_STRING  "Dropkick, version 0.155"
+#define LOG_VERSION 1
+#define NMEA_APP_STRING "$PVER,\"Dropkick, version 0.155\",155"
 
 /**
  * Fatal error codes (to be implemented)
@@ -80,7 +99,7 @@ Adafruit_USBD_MSC usb_msc;
 /*
  * Set opertaing mode for this build of the firmware here
  */
-#define OPS_MODE OPS_FLIGHT
+#define OPS_MODE OPS_STATIC_TEST
 
 #if (OPS_MODE == OPS_STATIC_TEST) 
 //#include "1976AtmosphericModel.h"
@@ -216,19 +235,6 @@ void updateHDot(float H_feet) {
     }
   }
 }
-
-/*
- * I2C connection to the MPU-6050 IMU
- */
-Adafruit_MPU6050 mpu;
-
-bool mpu6050Present = false;
-
-#define SEALEVELPRESSURE_HPA (1013.25)
-
-Adafruit_DPS310 dps;
-Adafruit_Sensor *dps_temp = dps.getTemperatureSensor();
-Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 
 /*
  * Adalogger M0 hardware definitions
@@ -600,33 +606,15 @@ void sampleAndLogAltitude()
 
   double dAlt_ft;
   float dPressure_hPa;
-    
-  sensors_event_t temp_event, pressure_event;
 
-  if (dps.temperatureAvailable()) {
-    dps_temp->getEvent(&temp_event);
-    
-    /*
-    Serial.print(F("Temperature = "));
-    Serial.print(temp_event.temperature);
-    Serial.println(" *C");
-    Serial.println();
-    */
-    
-  }
 
-  /*
-   * Note: sampling pressure in dps also samples temperature.
-   */
-  if (dps.pressureAvailable()) {
+  if (true) {
 
-    dps_pressure->getEvent(&pressure_event);
-
-    dPressure_hPa = pressure_event.pressure;
+    dPressure_hPa = bmp.pressure / 100.0;
 
     if (OPS_MODE != OPS_STATIC_TEST) {
 
-      dAlt_ft = dps.readAltitude() * 3.28084;
+      dAlt_ft = bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084;
 
     }
     else {
@@ -843,7 +831,7 @@ void setup() {
 
   delay(500);
 
-  Wire.setClock( 400000 );
+  Wire.setClock( 100000 );
   Wire.begin();
 
   Serial.println("Initialize peripheral ICs");
@@ -885,32 +873,41 @@ void setup() {
 
   Serial.println("u-blox GNSS present");
 
-  if (mpu.begin(MPU6050_I2C_ADDR, &Wire, 1 )) {
-    Serial.println("MPU6050 present");
+  if (imu.begin()) {
 
-    mpu6050Present = true;
+    Serial.println("IMU present");
 
-    mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
-    mpu.setGyroRange(MPU6050_RANGE_250_DEG);
-    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+    imuPresent = true;
+
+    imu.setAccelFS(ICM42688::gpm4);
+    imu.setGyroFS(ICM42688::dps250);
+    imu.setAccelODR(ICM42688::odr25);
+    imu.setGyroODR(ICM42688::odr25);
+
+    IMU.enableFifo(true,true,true);
   }
   else {
     Serial.println("Failed to find MPU6050 chip");
-    mpu6050Present = false;
+    imuPresent = false;
   }
 
   delay(500);
 
-  if (! dps.begin_I2C(DPS310_I2C_ADDR, &Wire)) {
+  if (! bmp.begin_I2C()) {
     Serial.println("Failed to find DPS310 chip; stopping");
     while (1) yield();
   }
-  Serial.println("DPS310 present");
+  Serial.println("BMP390 present");
 
   delay(500);
 
-  dps.configurePressure(DPS310_4HZ, DPS310_4SAMPLES);
-  dps.configureTemperature(DPS310_4HZ, DPS310_4SAMPLES);
+  //dps.configurePressure(DPS310_4HZ, DPS310_4SAMPLES);
+  //dps.configureTemperature(DPS310_4HZ, DPS310_4SAMPLES);
+
+  bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
+  bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
+  bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
+  bmp.setOutputDataRate(BMP3_ODR_50_HZ);
 
   if (OPS_MODE == OPS_STATIC_TEST) {
     Serial.println("Welcome. The device has booted in OPS_STATIC_TEST mode.");
@@ -1135,70 +1132,6 @@ void loop() {
   
 }
 
-/*
-void BMESample() {
-
-  if (nAppState != STATE_WAIT) {
-    
-    if (! bme.performReading()) {
-      Serial.println("Failed to perform BME888 reading :(");
-      return;
-    }
-
-    if (logFile ) {
-    
-      logFile.print("$PENV,");
-      logFile.print(millis());
-      logFile.print(",");
-      logFile.print(bme.temperature);
-      logFile.print(",");
-      logFile.print(bme.pressure / 100.0);
-      logFile.print(",");
-      logFile.print(bme.humidity);
-      logFile.print(",");
-      logFile.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
-      logFile.print(",");
-      logFile.print(bme.gas_resistance / 1000.0);
-      logFile.print(",");
-      logFile.println(measuredBattery_volts);
-
-    }
-  }
-}
-*/
-
-/*
-void PressureSample() {
-
-  if (nAppState != STATE_WAIT) {
-    
-    if (! bme.performReading()) {
-      Serial.println("Failed to perform BME888 reading :(");
-      return;
-    }
-
-    if (logFile ) {
-    
-      logFile.print("$PENV,");
-      logFile.print(millis() - ulLogfileOriginMillis);
-      logFile.print(",");
-      logFile.print(bme.temperature);
-      logFile.print(",");
-      logFile.print(bme.pressure / 100.0);
-      logFile.print(",");
-      logFile.print(bme.humidity);
-      logFile.print(",");
-      logFile.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
-      logFile.print(",");
-      logFile.print(bme.gas_resistance / 1000.0);
-      logFile.print(",");
-      logFile.println(measuredBattery_volts);
-
-    }
-  }
-}
-*/
-
 void startLogFileFlushing()
 {
   if (! bTimer5Active) {
@@ -1234,12 +1167,15 @@ void flushLog() {
   }
 }
 
+double ax[100], ay[100], az[100];
+double gx[100], gy[100], gz[100];
+size_t fifoSize;
+
 void IMU() {
 
-  if (mpu6050Present) {
+  if (imuPresent) {
     
-    sensors_event_t a, g, temp;
-    mpu.getEvent(&a, &g, &temp);
+    imu.readFifo();
 
 #ifdef notdef
     Serial.print(g.gyro.x); // rad per sec
