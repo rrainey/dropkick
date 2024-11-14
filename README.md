@@ -9,7 +9,7 @@ There are two board variants active in thie project: V4 SAM, is the board I use 
 use on a telescope poiting experiments. See [CHANGELOG.md](CHANGELOG.md) for a more detailed history.
 
 ## Sponsorship
-I'd like to thank [PCBWay](https://www.pcbway.com/) for their generous sponsorship. PCBWay supplied prototype PCBs and solder stencils for the CAM variant of this project. My experience with PCBWay predates their sponsorship here. In my experience, PCBWay has been a great choice for my projects. They deliver good PCBs and accurate stencils quickly.
+I'd like to thank [PCBWay](https://www.pcbway.com/) for their generous sponsorship. PCBWay supplied prototype PCBs and solder stencils for the CAM variant of this project. My experience with PCBWay predates their sponsorship here. PCBWay has been a great choice for my projects. They deliver good PCBs and accurate stencils quickly.
  
  ## Description
 
@@ -37,15 +37,15 @@ Exploded enclosure view (click to view)
 
 ## Specifications
 
-Dimensions: 58mm x 51mm x 20mm
+Enclosure Dimensions: 58mm x 51mm x 20mm
 
 Power: rechargeable 500mAh Li-Polymer battery
 
-Weight: 55 grams
+Unit Weight: 55 grams
 
 Storage: removable microSD card
 
-Log file format: one log file for each jump; raw log format is an extension of NMEA0183. Details to follow.
+Log file format: [one log file for each jump](LOG-FORMAT.md); raw log format is an extension of NMEA0183.
 
 USB micro-B connector (for recharging and programming)
 

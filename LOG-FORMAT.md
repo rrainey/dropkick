@@ -147,10 +147,10 @@ This value can be subtraced from the altitude reports in $PENV sentences to obta
 # $PST Record
 
 This record records application state changes. This internal state machine is used to
-identify when to start and stop loggin of each jump. 
+identify when to start and stop logging of each jump. 
 
-The application defines WAIT, FLIGHT, JUMPING, and LANDED1 states.  This infomation might be useful to
-isolate specific segments of the jump for post-jump analysis.
+The application defines WAIT, FLIGHT, JUMPING, and LANDED1 states.  This information might be useful to
+isolate specific segments of the jump during post-jump analysis.
 
 ### Comma-separated Fields
 
@@ -164,7 +164,6 @@ isolate specific segments of the jump for post-jump analysis.
 ### $PST Example
 
 `$PST,1000,FLIGHT`
-
 
 ## Sentence Reporting Rates
 
