@@ -5,8 +5,8 @@
 These devices are designed to be carried in a skydiver's breast pocket. The device loggs GPS position, barometric altitude, body rotation rates, and acceleration forces.
 Data is logged to a SD card for analysis on the ground.
 
-There are two board variants active in thie project: V4 SAM, is the board I use for skydiving. V5-CAM is a design repurposed for real-time
-use on a telescope poiting experiments. See [CHANGELOG.md](CHANGELOG.md) for a more detailed history.
+There are two board variants active in this project: V4 SAM, is the board I use for skydiving. V5-CAM is a design repurposed for real-time
+use on a telescope pointing experiments. See [CHANGELOG.md](CHANGELOG.md) for a more detailed history.
 
 ## Sponsorship
 I'd like to thank [PCBWay](https://www.pcbway.com/) for their generous sponsorship. PCBWay supplied prototype PCBs and solder stencils for the CAM variant of this project. My experience with PCBWay predates their sponsorship here. PCBWay has been a great choice for my projects. They deliver good PCBs and accurate stencils quickly.
@@ -91,21 +91,21 @@ The [u-blox Hardware Integration Manual](https://www.u-blox.com/en/docs/UBX-1601
 
 > ### Reflow soldering
 
-> A convection-type soldering oven is highly recommended over the infrared-type radiation oven. Convection-heated ovens allow precise control of the temperature, and all parts will heat up evenly, regardless of material properties, thickness of components and surface color. As a reference, see the "IPC-7530 Guidelines for temperature profiling for mass soldering (reflowand wave) processes”, published in 2001.
+> A convection-type soldering oven is highly recommended over the infrared-type radiation oven. Convection-heated ovens allow precise control of the temperature, and all parts will heat up evenly, regardless of material properties, thickness of components and surface color. As a reference, see the "IPC-7530 Guidelines for temperature profiling for mass soldering (reflow and wave) processes”, published in 2001.
 
 > ### Preheat phase
 
 >During the initial heating of component leads and balls, residual humidity will be dried out. Note that this preheat phase will not replace prior baking procedures.
 
-> * Temperature rise rate: max. 3 °C/s. If the temperature rise is too rapid in the preheat phase it maycause excessive slumping.
+> * Temperature rise rate: max. 3 °C/s. If the temperature rise is too rapid in the preheat phase it may cause excessive slumping.
 
 > * Time: 60 - 120 s. If the preheat is insufficient, rather large solder balls tend to generate. Conversely, if performed excessively, fine balls and large balls will be generated in clusters.
 
-> * End temperature: 150 - 200 °C. If the temperature is too low, non-melting tends to be caused inareas containing large heat capacity. 
+> * End temperature: 150 - 200 °C. If the temperature is too low, non-melting tends to be caused in areas containing large heat capacity. 
 
 > ### Heating and Reflow Phase
 
-> The temperature rises above the liquidus temperature of 217 °C. Avoid a sudden rise in temperatureas the slump of the paste could become worse.
+> The temperature rises above the liquidus temperature of 217 °C. Avoid a sudden rise in temperature as the slump of the paste could become worse.
 
 > * Limit time above 217 °C liquidus temperature: 40 - 60s
 
@@ -130,7 +130,7 @@ For example, I printed the prototype enclosure on a MakerBot Replicator 2 (PLA) 
 ## Credits
 
 This PCB design is based on several Adafruit Feather and Stemma QT sensor boards.  Adafruit maintains a family of
- excellent microcontroller and sensor evalation boards and companion software.  Support them. They deserve it.
+ excellent microcontroller and sensor evaluation boards and companion software.  Support them. They deserve it.
 
 The enclosure for this project was designed using the personal edition of Fusion 360. Autodesk supports the Maker community through access to this epic design tool.  Try it out.
 

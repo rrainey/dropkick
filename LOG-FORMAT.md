@@ -3,7 +3,7 @@
 A Dropkick log is a CSV text file. It is composed of [NMEA 0183](https://en.wikipedia.org/wiki/NMEA_0183) standard GPS records, or "sentences" using NMEA terminology,
  interspersed with the application-specific sentences described below.
 
- While the dropick box is turned on, a new log file will be created when the device detects that aircraft carrying the skydiver has taken off.  Logging continues 
+ While the dropkick box is turned on, a new log file will be created when the device detects that aircraft carrying the skydiver has taken off.  Logging continues 
  until a short time after the jumper reaches the ground.
 
  ## Time bases
@@ -21,7 +21,7 @@ As of version 55/155, all sentences end with a three character NMEA checksum seq
 
 A single instance of this record appears as the first sentence of each log.  It documents
  the software version used to create the file. The app version is an integer version number; the "hundreds" digit is used to
- designate whether the file originated frpm a Dropkick(0) or the newer Tempo board(1). This is an imperfect scheme.  It will make for future issues
+ designate whether the file originated from a Dropkick(0) or the newer Tempo board(1). This is an imperfect scheme.  It will make for future issues
  with versioning semantics. I'll have to fix that with an updated version of this sentence some time later.
 
 ### Comma-separated Fields
@@ -41,7 +41,7 @@ A single instance of this record appears as the first sentence of each log.  It 
 ### For Dropkick boards
 
 PIMU record logs sensor information from the [MPU6050 IMU IC](https://invensense.tdk.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf).  The MPU6050 is mounted on the
-Dropkick PCB such that the postive X-Axis projects out the SD card slot, the positive Y-Axis projects out the face opposite the USB port, and the positive Z-Axis projects out the "top" of the enclosure.  Since the device might be carried by a skydiver in almost any orientation, it would be up to analysis software to discern the body orientation inferred by actual readings.
+Dropkick PCB such that the positive X-Axis projects out the SD card slot, the positive Y-Axis projects out the face opposite the USB port, and the positive Z-Axis projects out the "top" of the enclosure.  Since the device might be carried by a skydiver in almost any orientation, it would be up to analysis software to discern the body orientation inferred by actual readings.
 
 ### For Tempo boards
 
@@ -85,10 +85,10 @@ as future work in this project.
 |---------------|----------------------------------------|
 | $PIM2         | Record identifier                      |
 | millis() timestamp | Time of sample in milliseconds    |
-| W       |    quaternion w component, nondimensional      |
-| X      |    quaternion x component, nondimensional        |
-| Y      |    quaternion y component, nondimensional     |
-| Z     |   quaternion z component, nondimensional   |
+| W       |    quaternion w component, non-dimensional      |
+| X      |    quaternion x component, non-dimensional        |
+| Y      |    quaternion y component, non-dimensional     |
+| Z     |   quaternion z component, non-dimensional   |
 
 
 ### $PIM2 Example
